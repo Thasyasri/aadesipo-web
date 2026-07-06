@@ -34,3 +34,8 @@ yarn-error.*
 
 # Supabase CLI local state
 supabase/.temp/
+
+# Stale in-place engine build artifacts (engine builds to dist/; src is TS-only).
+# Two patterns: `**/*.js` misses files directly in src/, `*.js` covers those.
+packages/engine/src/*.js
+packages/engine/src/**/*.js
