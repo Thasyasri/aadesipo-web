@@ -1260,3 +1260,29 @@ describe("finite house & hotel supply", () => {
     expect(result.state.buildingSupply).toEqual({ houses: 32, hotels: 12 });
   });
 });
+
+describe("event cards report their cash movement", () => {
+  it("attaches a positive cashDelta when a card pays out from the bank", () => {
+    // Chance sits at position 7; from GO (0) a roll summing to 7 lands there
+    // off that exact sum, and CHANCE_TABLE[7] collects 200 from the bank.
+    const result = rollForSum(placeAt(freshGame(), "p1", 0), "p1", 7);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const card = result.events.find((e) => e.type === "EventCardResolved");
+    expect(card?.type).toBe("EventCardResolved");
+    if (card?.type !== "EventCardResolved") return;
+    expect(card.cashDelta).toBe(200);
+  });
+
+  it("attaches a negative cashDelta when a card charges the player", () => {
+    // From position 5, a roll summing to 2 lands on the same Chance tile;
+    // CHANCE_TABLE[2] charges 50 to the bank.
+    const result = rollForSum(placeAt(freshGame(), "p1", 5), "p1", 2);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const card = result.events.find((e) => e.type === "EventCardResolved");
+    expect(card?.type).toBe("EventCardResolved");
+    if (card?.type !== "EventCardResolved") return;
+    expect(card.cashDelta).toBe(-50);
+  });
+});

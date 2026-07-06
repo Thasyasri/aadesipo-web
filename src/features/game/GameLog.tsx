@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import type { GameEvent } from "@aadesipo/engine";
+import { getTile, type GameEvent } from "@aadesipo/engine";
 import { sfx } from "@/services/audio";
 import { useTranslation, type TranslationKey } from "@/i18n";
 import type { PlayerSetup } from "@/state/gameStore";
@@ -29,6 +29,7 @@ function describeEvent(event: GameEvent, t: TFunc, nameFor: NameFor): string | n
     case "PropertyPurchased":
       return t("gameLog.propertyPurchased", {
         player: nameFor(event.playerId),
+        property: getTile(event.position).name,
         amount: formatRupees(event.price),
       });
     case "RentPaid":
@@ -63,8 +64,24 @@ function describeEvent(event: GameEvent, t: TFunc, nameFor: NameFor): string | n
         amount: formatRupees(event.amount),
         creditor: event.creditorId ? nameFor(event.creditorId) : "the bank",
       });
-    case "EventCardResolved":
+    case "EventCardResolved": {
+      const delta = event.cashDelta ?? 0;
+      if (delta > 0) {
+        return t("gameLog.eventCardGain", {
+          player: nameFor(event.playerId),
+          text: event.text,
+          amount: formatRupees(delta),
+        });
+      }
+      if (delta < 0) {
+        return t("gameLog.eventCardLoss", {
+          player: nameFor(event.playerId),
+          text: event.text,
+          amount: formatRupees(-delta),
+        });
+      }
       return t("gameLog.eventCard", { player: nameFor(event.playerId), text: event.text });
+    }
     case "AuctionStarted":
       return t("gameLog.auctionStarted");
     case "AuctionWon":

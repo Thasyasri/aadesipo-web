@@ -203,6 +203,10 @@ export type GameEvent =
       readonly deck: "chance" | "funny";
       readonly diceSum: number;
       readonly text: string;
+      /** The drawing player's net cash change from this card, when it's a pure
+       *  cash card (positive = collected, negative = paid). Undefined for
+       *  movement/jail cards, whose consequences surface as their own events. */
+      readonly cashDelta?: number;
     }
   | { readonly type: "AuctionStarted"; readonly position: number }
   | { readonly type: "AuctionBid"; readonly playerId: string; readonly amount: number }

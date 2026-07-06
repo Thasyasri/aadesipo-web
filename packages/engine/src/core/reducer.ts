@@ -439,15 +439,20 @@ function resolveEventTile(
   if (!outcome) {
     throw new Error(`resolveEventTile: no outcome for dice sum ${diceSum}`);
   }
-  events.push({
-    type: "EventCardResolved",
+  const cardBase = {
+    type: "EventCardResolved" as const,
     playerId,
-    deck: tileType === "chance" ? "chance" : "funny",
+    deck: (tileType === "chance" ? "chance" : "funny") as "chance" | "funny",
     diceSum,
     text: outcome.text,
-  });
+  };
 
   const effect = outcome.effect;
+
+  // Pure cash cards: apply the effect first, then report the drawing player's
+  // net change right on the card line — several collect-* effects emit no other
+  // event, so without this the log would say a card resolved but never how much
+  // money moved.
   switch (effect.kind) {
     case "pay-bank":
     case "collect-from-bank":
@@ -455,10 +460,20 @@ function resolveEventTile(
     case "pay-each-player":
     case "street-repairs":
     case "collect-per-property": {
+      const before = requirePlayer(state, playerId).cash;
       const result = applyEventEffect(state, playerId, effect);
+      const after = requirePlayer(result.state, playerId).cash;
+      events.push({ ...cardBase, cashDelta: after - before });
       events.push(...result.events);
       return accept({ ...result.state, turnPhase: postTileResolutionPhase(result.state) }, events);
     }
+  }
+
+  // Movement / jail / jail-free cards carry no direct cash delta of their own
+  // (any rent or purchase where they land shows as its own log line).
+  events.push(cardBase);
+
+  switch (effect.kind) {
     case "advance-to-nearest-transit": {
       const from = requirePlayer(state, playerId).position;
       const moveResult = movePlayer(state, playerId, spacesToNearestTransit(from));
