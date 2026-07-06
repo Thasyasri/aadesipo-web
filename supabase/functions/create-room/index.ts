@@ -7,6 +7,7 @@
 // deno-lint-ignore-file
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { withCors } from "../_shared/cors.ts";
+import { ensureProfile } from "../_shared/profile.ts";
 
 const ROOM_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; // no 0/O/1/I
 
@@ -38,6 +39,13 @@ Deno.serve(withCors(async (req: Request) => {
   } = await supabase.auth.getUser();
   if (authError || !user) {
     return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
+  }
+
+  // rooms.host_id / room_players.user_id FK to profiles(id) — guarantee the row
+  // exists before we insert, so a fast create never races the client.
+  const profile = await ensureProfile(supabase, user);
+  if (profile.error) {
+    return new Response(JSON.stringify({ error: profile.error }), { status: 500 });
   }
 
   const body = await req.json().catch(() => ({}));

@@ -65,7 +65,9 @@
       "PowerShell(\"=== lint ===\")",
       "PowerShell(\"=== bundle budget ===\")",
       "Bash(git check-ignore *)",
-      "Bash(pnpm lint *)"
+      "Bash(pnpm lint *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "G:\\aadesipo-web\\tmp-screenshots"

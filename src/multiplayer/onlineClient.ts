@@ -23,6 +23,27 @@ function requireSupabase() {
   return supabase;
 }
 
+/**
+ * Pulls the human-readable reason out of a failed `functions.invoke`. On a
+ * non-2xx response supabase-js throws a FunctionsHttpError whose `.message` is
+ * a useless generic ("Edge Function returned a non-2xx status code") — the
+ * actual reason our functions return lives in the JSON `{ error }` body on the
+ * Response it carries in `.context`. Fall back to the generic message if the
+ * body isn't the shape we expect.
+ */
+async function functionErrorMessage(error: unknown, fallback: string): Promise<string> {
+  const ctx = (error as { context?: unknown } | null)?.context;
+  if (ctx instanceof Response) {
+    try {
+      const body = await ctx.clone().json();
+      if (body && typeof body.error === "string") return body.error;
+    } catch {
+      // Body wasn't JSON — nothing better to show than the generic message.
+    }
+  }
+  return (error as Error | null)?.message ?? fallback;
+}
+
 export async function createRoom(
   maxPlayers: number,
   mode: string,
@@ -32,7 +53,7 @@ export async function createRoom(
   const { data, error } = await client.functions.invoke<CreateRoomResult>("create-room", {
     body: { maxPlayers, mode, houseRules },
   });
-  if (error || !data) throw new Error(error?.message ?? "Failed to create room");
+  if (error || !data) throw new Error(await functionErrorMessage(error, "Failed to create room"));
   return data;
 }
 
@@ -41,7 +62,7 @@ export async function joinRoom(roomCode: string): Promise<{ roomId: string }> {
   const { data, error } = await client.functions.invoke<{ roomId: string }>("join-room", {
     body: { roomCode },
   });
-  if (error || !data) throw new Error(error?.message ?? "Failed to join room");
+  if (error || !data) throw new Error(await functionErrorMessage(error, "Failed to join room"));
   return data;
 }
 
@@ -50,7 +71,7 @@ export async function startGame(roomId: string): Promise<StartGameResult> {
   const { data, error } = await client.functions.invoke<StartGameResult>("start-game", {
     body: { roomId },
   });
-  if (error || !data) throw new Error(error?.message ?? "Failed to start game");
+  if (error || !data) throw new Error(await functionErrorMessage(error, "Failed to start game"));
   return data;
 }
 
@@ -62,7 +83,7 @@ export async function submitAction(
   const { data, error } = await client.functions.invoke<ValidateActionResponse>("validate-action", {
     body: { gameId, action },
   });
-  if (error) return { ok: false, error: error.message };
+  if (error) return { ok: false, error: await functionErrorMessage(error, "Action failed") };
   return data ?? { ok: false, error: "Empty response from server" };
 }
 

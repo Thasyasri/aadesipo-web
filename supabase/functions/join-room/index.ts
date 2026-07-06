@@ -3,6 +3,7 @@
 // deno-lint-ignore-file
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { withCors } from "../_shared/cors.ts";
+import { ensureProfile } from "../_shared/profile.ts";
 
 Deno.serve(withCors(async (req: Request) => {
   const authHeader = req.headers.get("Authorization");
@@ -24,6 +25,14 @@ Deno.serve(withCors(async (req: Request) => {
   } = await supabase.auth.getUser();
   if (authError || !user) {
     return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401 });
+  }
+
+  // room_players.user_id FKs to profiles(id) — a fresh guest joining via link
+  // often hasn't had their profile row created by the client yet, so ensure it
+  // here before seating them (otherwise the insert dies on the foreign key).
+  const profile = await ensureProfile(supabase, user);
+  if (profile.error) {
+    return new Response(JSON.stringify({ error: profile.error }), { status: 500 });
   }
 
   const body = await req.json().catch(() => ({}));
