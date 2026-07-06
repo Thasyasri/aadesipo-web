@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(pnpm typecheck 2>&1)",
+      "PowerShell(pnpm test 2>&1)",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\(x86\\)/Microsoft/Edge/Application/**)",
+      "Bash(cp /tmp/board_full.png \"/c/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad/board_full.png\" && echo copied)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader --hide-scrollbars --force-device-scale-factor=2 --window-size=760,860 --virtual-time-budget=6000 --screenshot=/tmp/board_2x.png http://localhost:5173/board-preview)",
+      "Bash(python -)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader --hide-scrollbars --force-device-scale-factor=2 --window-size=760,860 --virtual-time-budget=6000 --screenshot=C:/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad/after_full.png http://localhost:5173/board-preview)",
+      "Bash(python - /c/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless --disable-gpu --enable-unsafe-swiftshader --hide-scrollbars --force-device-scale-factor=1 --window-size=390,844 --virtual-time-budget=7000 --screenshot=C:/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad/dbg_old.png http://localhost:5173/screen-preview)",
+      "Bash(python - /c/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad dbg_old)",
+      "Bash(node /c/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad/cdp_emblem.mjs /c/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad)",
+      "Bash(taskkill //F //IM chrome.exe)",
+      "Bash(start \"\" \"http://localhost:5173/\")",
+      "Bash(node -e \"console.log\\('pixi', require\\('./node_modules/pixi.js/package.json'\\).version\\)\")",
+      "Bash(curl -s -o /dev/null -w \"dev: %{http_code}\\\\n\" http://localhost:5173/screen-preview)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader --hide-scrollbars --force-device-scale-factor=1 --window-size=1500,940 --virtual-time-budget=7000 --screenshot=C:/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad/before_board.png http://localhost:5173/screen-preview)",
+      "Bash('/c/Program Files/Google/Chrome/Application/chrome.exe' --headless=new --enable-unsafe-swiftshader --use-gl=angle --use-angle=swiftshader --hide-scrollbars --force-device-scale-factor=1 --window-size=1440,900 --virtual-time-budget=7000 --screenshot=C:/Users/sharm/AppData/Local/Temp/claude/g--aadesipo-web/94387388-94f7-4713-ba6c-ba877c95b983/scratchpad/after_desktop.png http://localhost:5173/screen-preview)"
+    ],
+    "additionalDirectories": [
+      "\\tmp"
+    ]
+  }
+}

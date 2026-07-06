@@ -1,0 +1,36 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+packages/*/dist/
+*.tsbuildinfo
+
+# Env
+.env
+.env.local
+.env*.local
+
+# Testing / coverage
+coverage/
+
+# Logs
+npm-debug.*
+yarn-debug.*
+yarn-error.*
+*.log
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Cloudflare
+.wrangler/
+
+# Supabase CLI local state
+supabase/.temp/

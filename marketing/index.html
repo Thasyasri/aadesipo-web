@@ -1,0 +1,594 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AadesiPo — game night in your pocket</title>
+    <meta
+      name="description"
+      content="A desi-flavored, Monopoly-inspired party game. Play with friends across the room or across the country — free to start, no account required to try it."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      :root {
+        --bg-base: #0f1222;
+        --bg-surface: #1a1f35;
+        --bg-raised: #242b47;
+        --text-primary: #f4f5fa;
+        --text-secondary: #a3abc7;
+        --text-disabled: #5a6284;
+        --marigold: #ffb020;
+        --coral: #ff5d5d;
+        --group-brown: #8d6e63;
+        --group-lightblue: #4fc3f7;
+        --group-pink: #f06292;
+        --group-orange: #ffb020;
+        --group-red: #ff5d5d;
+        --group-yellow: #fbbf24;
+        --group-green: #34d399;
+        --group-darkblue: #3b4a9e;
+      }
+
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        background: var(--bg-base);
+        color: var(--text-primary);
+        font-family: "Inter", system-ui, sans-serif;
+        line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      h1,
+      h2,
+      h3 {
+        font-family: "Baloo 2", system-ui, sans-serif;
+        font-weight: 800;
+        line-height: 1.1;
+      }
+
+      .wrap {
+        max-width: 1080px;
+        margin: 0 auto;
+        padding: 0 1.5rem;
+      }
+
+      .tile-strip {
+        display: flex;
+        height: 10px;
+        width: 100%;
+      }
+      .tile-strip > span {
+        flex: 1;
+      }
+
+      nav {
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: rgba(15, 18, 34, 0.85);
+        backdrop-filter: blur(12px);
+        border-bottom: 1px solid var(--bg-raised);
+      }
+      nav .wrap {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 64px;
+      }
+      .logo {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: 1.25rem;
+        color: var(--marigold);
+        letter-spacing: -0.01em;
+      }
+      nav a.cta {
+        background: var(--marigold);
+        color: #1a1200;
+        font-weight: 700;
+        padding: 0.55rem 1.25rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+
+      header.hero {
+        padding: 5rem 0 4rem;
+        position: relative;
+        overflow: hidden;
+      }
+      header.hero .wrap {
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 3rem;
+        align-items: center;
+      }
+      .eyebrow {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: var(--bg-surface);
+        border: 1px solid var(--bg-raised);
+        color: var(--marigold);
+        font-weight: 600;
+        font-size: 0.8rem;
+        padding: 0.35rem 0.9rem;
+        border-radius: 999px;
+        margin-bottom: 1.5rem;
+      }
+      h1.headline {
+        font-size: clamp(2.4rem, 5vw, 3.4rem);
+        margin-bottom: 1.25rem;
+      }
+      h1.headline .accent {
+        color: var(--marigold);
+      }
+      p.subhead {
+        font-size: 1.15rem;
+        color: var(--text-secondary);
+        max-width: 34ch;
+        margin-bottom: 2rem;
+      }
+      .hero-ctas {
+        display: flex;
+        gap: 0.9rem;
+        flex-wrap: wrap;
+      }
+      .btn-primary,
+      .btn-secondary {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-weight: 700;
+        padding: 0.85rem 1.6rem;
+        border-radius: 999px;
+        text-decoration: none;
+        font-size: 0.95rem;
+      }
+      .btn-primary {
+        background: var(--marigold);
+        color: #1a1200;
+      }
+      .btn-secondary {
+        background: transparent;
+        color: var(--text-primary);
+        border: 1px solid var(--text-secondary);
+      }
+
+      .board-fragment {
+        aspect-ratio: 1;
+        border-radius: 20px;
+        background: var(--bg-surface);
+        border: 1px solid var(--bg-raised);
+        padding: 14px;
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        grid-template-rows: repeat(4, 1fr);
+        gap: 8px;
+      }
+      .board-fragment .tile {
+        background: var(--bg-raised);
+        border-radius: 8px;
+        position: relative;
+        overflow: hidden;
+      }
+      .board-fragment .tile .band {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 30%;
+      }
+      .board-fragment .tile.token::after {
+        content: "";
+        position: absolute;
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: var(--marigold);
+        box-shadow:
+          6px 4px 0 var(--group-lightblue),
+          -5px 6px 0 var(--group-pink);
+      }
+
+      section {
+        padding: 4.5rem 0;
+      }
+      section.alt {
+        background: var(--bg-surface);
+      }
+
+      .section-head {
+        text-align: center;
+        max-width: 42rem;
+        margin: 0 auto 3rem;
+      }
+      .section-head h2 {
+        font-size: clamp(1.8rem, 3vw, 2.3rem);
+        margin-bottom: 0.75rem;
+      }
+      .section-head p {
+        color: var(--text-secondary);
+        font-size: 1.05rem;
+      }
+
+      .loop-grid {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 1.5rem;
+      }
+      .loop-step {
+        background: var(--bg-raised);
+        border-radius: 16px;
+        padding: 1.75rem 1.5rem;
+      }
+      .loop-step .num {
+        font-family: "Baloo 2", sans-serif;
+        font-weight: 800;
+        font-size: 1.6rem;
+        color: var(--marigold);
+        margin-bottom: 0.75rem;
+        display: block;
+      }
+      .loop-step h3 {
+        font-size: 1.1rem;
+        margin-bottom: 0.5rem;
+      }
+      .loop-step p {
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+      }
+
+      .modes-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+      }
+      .mode-card {
+        background: var(--bg-base);
+        border: 1px solid var(--bg-raised);
+        border-radius: 16px;
+        padding: 2rem 1.75rem;
+      }
+      .mode-card .emoji {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+        display: block;
+      }
+      .mode-card h3 {
+        font-size: 1.2rem;
+        margin-bottom: 0.5rem;
+      }
+      .mode-card p {
+        color: var(--text-secondary);
+        font-size: 0.92rem;
+      }
+
+      .ai-roster {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 1.5rem;
+      }
+      .ai-card {
+        text-align: center;
+        padding: 1.5rem;
+      }
+      .ai-card .emoji {
+        font-size: 2.5rem;
+        display: block;
+        margin-bottom: 0.75rem;
+      }
+      .ai-card h3 {
+        font-size: 1.05rem;
+        margin-bottom: 0.4rem;
+      }
+      .ai-card p {
+        color: var(--text-secondary);
+        font-size: 0.88rem;
+      }
+
+      .closing {
+        text-align: center;
+        padding: 5rem 0;
+      }
+      .closing h2 {
+        font-size: clamp(2rem, 4vw, 2.6rem);
+        margin-bottom: 1rem;
+      }
+      .closing p {
+        color: var(--text-secondary);
+        margin-bottom: 2rem;
+        font-size: 1.05rem;
+      }
+
+      footer {
+        border-top: 1px solid var(--bg-raised);
+        padding: 2.5rem 0;
+      }
+      footer .wrap {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+      }
+      footer nav {
+        position: static;
+        background: none;
+        border: none;
+        backdrop-filter: none;
+      }
+      footer .links {
+        display: flex;
+        gap: 1.5rem;
+      }
+      footer a {
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.9rem;
+      }
+      footer .copyright {
+        color: var(--text-disabled);
+        font-size: 0.85rem;
+      }
+
+      @media (max-width: 860px) {
+        header.hero .wrap {
+          grid-template-columns: 1fr;
+        }
+        .board-fragment {
+          max-width: 320px;
+          margin: 0 auto;
+        }
+        .loop-grid,
+        .modes-grid,
+        .ai-roster {
+          grid-template-columns: 1fr 1fr;
+        }
+      }
+      @media (max-width: 560px) {
+        .loop-grid,
+        .modes-grid,
+        .ai-roster {
+          grid-template-columns: 1fr;
+        }
+        footer .wrap {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+      }
+
+      a:focus-visible,
+      button:focus-visible {
+        outline: 2px solid var(--marigold);
+        outline-offset: 2px;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        html {
+          scroll-behavior: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <nav>
+      <div class="wrap">
+        <span class="logo">AadesiPo</span>
+        <a class="cta" href="#play">Play now</a>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="wrap">
+        <div>
+          <span class="eyebrow">🎲 Game night in your pocket</span>
+          <h1 class="headline">
+            Buy the block. <span class="accent">Bankrupt</span> your best friend.
+          </h1>
+          <p class="subhead">
+            A desi-flavored, Monopoly-inspired party game. Play pass-and-play on one phone, invite
+            friends to a real online room, or square up against three very different AI opponents
+            when no one else is free.
+          </p>
+          <div class="hero-ctas">
+            <a class="btn-primary" href="#play" id="play">Play in your browser</a>
+            <a class="btn-secondary" href="#modes">See how it works</a>
+          </div>
+        </div>
+        <div
+          class="board-fragment"
+          role="img"
+          aria-label="A stylized fragment of the game board, showing colored property tiles and a player token"
+        >
+          <div class="tile"><div class="band" style="background: var(--group-brown)"></div></div>
+          <div class="tile">
+            <div class="band" style="background: var(--group-lightblue)"></div>
+          </div>
+          <div class="tile token">
+            <div class="band" style="background: var(--group-pink)"></div>
+          </div>
+          <div class="tile"><div class="band" style="background: var(--group-orange)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-red)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-yellow)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-green)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-darkblue)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-pink)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-orange)"></div></div>
+          <div class="tile">
+            <div class="band" style="background: var(--group-lightblue)"></div>
+          </div>
+          <div class="tile"><div class="band" style="background: var(--group-brown)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-darkblue)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-green)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-yellow)"></div></div>
+          <div class="tile"><div class="band" style="background: var(--group-red)"></div></div>
+        </div>
+      </div>
+    </header>
+
+    <div class="tile-strip" aria-hidden="true">
+      <span style="background: var(--group-brown)"></span>
+      <span style="background: var(--group-lightblue)"></span>
+      <span style="background: var(--group-pink)"></span>
+      <span style="background: var(--group-orange)"></span>
+      <span style="background: var(--group-red)"></span>
+      <span style="background: var(--group-yellow)"></span>
+      <span style="background: var(--group-green)"></span>
+      <span style="background: var(--group-darkblue)"></span>
+    </div>
+
+    <section id="loop">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>One turn, four decisions</h2>
+          <p>The whole game is this loop, over and over, until someone owns everything.</p>
+        </div>
+        <div class="loop-grid">
+          <div class="loop-step">
+            <span class="num">01</span>
+            <h3>Roll and move</h3>
+            <p>Doubles get you an extra turn — three in a row lands you in jail.</p>
+          </div>
+          <div class="loop-step">
+            <span class="num">02</span>
+            <h3>Buy or auction</h3>
+            <p>
+              Land on an empty property: buy it outright, or pass and watch everyone else bid it up.
+            </p>
+          </div>
+          <div class="loop-step">
+            <span class="num">03</span>
+            <h3>Build your block</h3>
+            <p>
+              Own a full color group and rent doubles — build houses and a hotel to really hurt.
+            </p>
+          </div>
+          <div class="loop-step">
+            <span class="num">04</span>
+            <h3>Trade, mortgage, survive</h3>
+            <p>
+              Short on cash? Mortgage a property or make a deal. Run out of options, and you're out.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="alt" id="modes">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Play however your evening's going</h2>
+          <p>Three ways to get a game going, all built on the same rules.</p>
+        </div>
+        <div class="modes-grid">
+          <div class="mode-card">
+            <span class="emoji">📱</span>
+            <h3>Pass &amp; Play</h3>
+            <p>
+              Everyone's in the same room, sharing one phone. A privacy screen shows between turns —
+              no peeking at the next player's move.
+            </p>
+          </div>
+          <div class="mode-card">
+            <span class="emoji">🔗</span>
+            <h3>Online rooms</h3>
+            <p>
+              Create a room, send a link. Friends join from anywhere and the game plays out in real
+              time — no matter whose turn it is.
+            </p>
+          </div>
+          <div class="mode-card">
+            <span class="emoji">🤖</span>
+            <h3>Vs. AI</h3>
+            <p>
+              No one around? Three AI personalities are always up for a game — and they don't play
+              the same way twice.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="ai">
+      <div class="wrap">
+        <div class="section-head">
+          <h2>Meet the house</h2>
+          <p>Same rules, same board, genuinely different opponents.</p>
+        </div>
+        <div class="ai-roster">
+          <div class="ai-card">
+            <span class="emoji">💰</span>
+            <h3>The Miser</h3>
+            <p>
+              Hoards cash, avoids risk, and will out-survive you by simply refusing to spend money.
+            </p>
+          </div>
+          <div class="ai-card">
+            <span class="emoji">🎲</span>
+            <h3>The Gambler</h3>
+            <p>
+              Buys everything, builds fast, bids past what it's worth. High variance, high pressure.
+            </p>
+          </div>
+          <div class="ai-card">
+            <span class="emoji">😈</span>
+            <h3>The Troll</h3>
+            <p>
+              Doesn't care about winning cleanly — just about making sure you don't complete that
+              color group.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="tile-strip" aria-hidden="true">
+      <span style="background: var(--group-darkblue)"></span>
+      <span style="background: var(--group-green)"></span>
+      <span style="background: var(--group-yellow)"></span>
+      <span style="background: var(--group-red)"></span>
+      <span style="background: var(--group-orange)"></span>
+      <span style="background: var(--group-pink)"></span>
+      <span style="background: var(--group-lightblue)"></span>
+      <span style="background: var(--group-brown)"></span>
+    </div>
+
+    <section class="closing">
+      <div class="wrap">
+        <h2>No real money, ever. Just bragging rights.</h2>
+        <p>Every rupee on the board is play money. There's nothing to buy your way out of.</p>
+        <a class="btn-primary" href="#play">Start a game</a>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <span class="logo">AadesiPo</span>
+        <nav class="links">
+          <a href="/privacy">Privacy</a>
+          <a href="/terms">Terms</a>
+          <a href="mailto:hello@aadesipo.app">Contact</a>
+        </nav>
+        <span class="copyright">&copy; 2026 AadesiPo</span>
+      </div>
+    </footer>
+  </body>
+</html>

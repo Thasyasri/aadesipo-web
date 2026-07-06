@@ -1,0 +1,22 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "strict": false,
+    "strictNullChecks": true,
+    "noImplicitAny": false,
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "types": []
+  },
+  "include": [
+    "create-room/index.ts",
+    "join-room/index.ts",
+    "start-game/index.ts",
+    "validate-action/index.ts",
+    "deno-stubs.d.ts"
+  ]
+}
