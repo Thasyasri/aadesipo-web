@@ -1,12 +1,7 @@
 import type { Action, GameState, TradeOffer } from "../core/types.js";
 import { getActingPlayerId } from "../core/reducer.js";
 import { JAIL_BAIL_COST, isOwnable, getTile, BOARD, propertiesInGroup } from "../economy/index.js";
-import {
-  canBuildOnProperty,
-  ownerOf,
-  ownershipAt,
-  propertiesOwnedBy,
-} from "../rules/property.js";
+import { canBuildOnProperty, ownerOf, ownershipAt, propertiesOwnedBy } from "../rules/property.js";
 import { canSellEvenly } from "../rules/property.js";
 import { loanCap } from "../rules/loans.js";
 import { nextFloat, type RngState } from "../rng/index.js";
@@ -97,7 +92,10 @@ function decideDebtResolution(
         propertyValue(state, playerId, b, config.personality),
     );
   if (mortgageable.length > 0) {
-    return { action: { type: "MortgageProperty", playerId, position: mortgageable[0]! }, nextRng: rng };
+    return {
+      action: { type: "MortgageProperty", playerId, position: mortgageable[0]! },
+      nextRng: rng,
+    };
   }
 
   // Sell a building — but respect even-building (only the most-developed tile

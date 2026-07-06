@@ -1,13 +1,15 @@
-import * as Sentry from "@sentry/react";
-
 /**
  * Call once, at app startup (see src/main.tsx).
  *
- * VITE_SENTRY_DSN is intentionally optional: local dev without a DSN just
- * skips init rather than throwing, so nobody needs a Sentry account to run
- * `pnpm dev`.
+ * @sentry/react is imported dynamically, and only when a DSN is actually
+ * configured — so the SDK is never bundled into the entry chunk that every
+ * visitor downloads before the app even boots. An unconfigured build (local
+ * dev, or a deploy without VITE_SENTRY_DSN) pays nothing for it.
+ *
+ * VITE_SENTRY_DSN stays optional either way: no DSN just skips init rather
+ * than throwing, so nobody needs a Sentry account to run `pnpm dev`.
  */
-export function initSentry(): void {
+export async function initSentry(): Promise<void> {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
 
   if (!dsn) {
@@ -17,6 +19,7 @@ export function initSentry(): void {
     return;
   }
 
+  const Sentry = await import("@sentry/react");
   Sentry.init({
     dsn,
     environment: import.meta.env.MODE,

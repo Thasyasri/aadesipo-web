@@ -1,9 +1,4 @@
-import {
-  CHANCE_TABLE,
-  FUNNY_TABLE,
-  type EventEffect,
-  type EventOutcome,
-} from "@aadesipo/engine";
+import { CHANCE_TABLE, FUNNY_TABLE, type EventEffect, type EventOutcome } from "@aadesipo/engine";
 import { BottomSheet } from "@/components/BottomSheet";
 import { formatRupees } from "@/utils/currency";
 
@@ -80,9 +75,7 @@ function EventSection({
               </span>
               <span className="text-text-primary">
                 {outcome?.text}
-                {amount && (
-                  <span className="font-semibold text-brand-primary"> ({amount})</span>
-                )}
+                {amount && <span className="font-semibold text-brand-primary"> ({amount})</span>}
               </span>
             </li>
           );

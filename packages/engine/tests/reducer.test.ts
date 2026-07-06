@@ -379,8 +379,13 @@ describe("mortgage and building", () => {
   });
 
   it("allows building once 17 color properties are owned collectively, even without owning the full group", () => {
-    const propertyPositions = BOARD.filter((tile) => tile.type === "property").map((tile) => tile.position);
-    const ownedPositions = [1, ...propertyPositions.filter((position) => position !== 1 && position !== 3).slice(0, 16)];
+    const propertyPositions = BOARD.filter((tile) => tile.type === "property").map(
+      (tile) => tile.position,
+    );
+    const ownedPositions = [
+      1,
+      ...propertyPositions.filter((position) => position !== 1 && position !== 3).slice(0, 16),
+    ];
 
     let state = freshGame();
     state = {
@@ -426,8 +431,13 @@ describe("mortgage and building", () => {
   });
 
   it("builds a house once the unlock is reached, and selling refunds half cost", () => {
-    const propertyPositions = BOARD.filter((tile) => tile.type === "property").map((tile) => tile.position);
-    const ownedPositions = [1, ...propertyPositions.filter((position) => position !== 1 && position !== 3).slice(0, 16)];
+    const propertyPositions = BOARD.filter((tile) => tile.type === "property").map(
+      (tile) => tile.position,
+    );
+    const ownedPositions = [
+      1,
+      ...propertyPositions.filter((position) => position !== 1 && position !== 3).slice(0, 16),
+    ];
 
     let state = freshGame();
     state = {
@@ -707,7 +717,9 @@ describe("event movement effects", () => {
     // is impossible (they terminate at depth 2); we inject a fake looping
     // table to prove the backstop fires instead of hanging the game.
     const loopingTables: EventTables = {
-      chance: { 7: { text: "infinite loop card", effect: { kind: "move-back-n-spaces", spaces: 0 } } },
+      chance: {
+        7: { text: "infinite loop card", effect: { kind: "move-back-n-spaces", spaces: 0 } },
+      },
       funny: {},
     };
     const state = placeAt(freshGame(), "p1", 7); // position 7 is a Chance tile
@@ -900,11 +912,17 @@ describe("bank loans", () => {
     );
     // The richer p2 isn't trailing, so can't borrow at all.
     const leaderTurn = { ...trailingGame(), currentPlayerIndex: 1 };
-    expect(applyAction(leaderTurn, { type: "TakeLoan", playerId: "p2", amount: 50 }).ok).toBe(false);
+    expect(applyAction(leaderTurn, { type: "TakeLoan", playerId: "p2", amount: 50 }).ok).toBe(
+      false,
+    );
   });
 
   it("accrues interest on the loan each completed round", () => {
-    let state = applyAction(trailingGame(), { type: "TakeLoan", playerId: "p1", amount: 200 }).state;
+    let state = applyAction(trailingGame(), {
+      type: "TakeLoan",
+      playerId: "p1",
+      amount: 200,
+    }).state;
     // Make it p2's turn and end it — that wraps the round and ticks interest.
     state = { ...state, currentPlayerIndex: 1, turnPhase: "turn-idle" };
     const ended = applyAction(state, { type: "EndTurn", playerId: "p2" });
@@ -1014,7 +1032,12 @@ describe("even-building house rule", () => {
 
   it("rejects an uneven BuildHouse but accepts the even one, once building is unlocked", () => {
     const propertyPositions = BOARD.filter((t) => t.type === "property").map((t) => t.position);
-    const owned = [6, 8, 14, ...propertyPositions.filter((p) => ![6, 8, 14].includes(p)).slice(0, 14)];
+    const owned = [
+      6,
+      8,
+      14,
+      ...propertyPositions.filter((p) => ![6, 8, 14].includes(p)).slice(0, 14),
+    ];
     const properties: Record<number, PropertyOwnership> = {};
     for (const p of owned) properties[p] = own(0);
     properties[6] = own(1); // 6 is one ahead of 8/14
@@ -1162,7 +1185,11 @@ describe("finite house & hotel supply", () => {
   });
 
   it("building a house draws one from the bank, keeping the pool conserved", () => {
-    const result = applyAction(unlockedFinite(), { type: "BuildHouse", playerId: "p1", position: 1 });
+    const result = applyAction(unlockedFinite(), {
+      type: "BuildHouse",
+      playerId: "p1",
+      position: 1,
+    });
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.state.buildingSupply).toEqual({ houses: 31, hotels: 12 });
@@ -1200,7 +1227,11 @@ describe("finite house & hotel supply", () => {
   });
 
   it("selling a building returns it to the bank's stock", () => {
-    const built = applyAction(unlockedFinite(), { type: "BuildHouse", playerId: "p1", position: 1 });
+    const built = applyAction(unlockedFinite(), {
+      type: "BuildHouse",
+      playerId: "p1",
+      position: 1,
+    });
     expect(built.ok).toBe(true);
     if (!built.ok) return;
     expect(built.state.buildingSupply).toEqual({ houses: 31, hotels: 12 });

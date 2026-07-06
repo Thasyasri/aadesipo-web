@@ -443,7 +443,8 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
         const dir = Math.sign(ev.steps);
         const count = Math.abs(ev.steps);
         if (count > 0 && count <= WALK_STEP_CAP) {
-          for (let k = 1; k <= count; k++) push(ev.playerId, (((ev.from + dir * k) % 40) + 40) % 40);
+          for (let k = 1; k <= count; k++)
+            push(ev.playerId, (((ev.from + dir * k) % 40) + 40) % 40);
         } else {
           push(ev.playerId, ev.to); // no move, or a long jump — glide straight there
         }
@@ -556,7 +557,10 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
 
   return (
     <div ref={wrapperRef} className="w-full">
-      <div className="relative mx-auto" style={{ width: size || "100%", height: size || undefined }}>
+      <div
+        className="relative mx-auto"
+        style={{ width: size || "100%", height: size || undefined }}
+      >
         <div
           ref={hostRef}
           role="img"
@@ -589,7 +593,9 @@ function drawStaticBoard(
 
     if (tile.type === "property") {
       const b = bandRect(rect, Math.min(rect.height, rect.width) * 0.25);
-      const band = new Graphics().rect(b.x, b.y, b.w, b.h).fill(hexToPixiColor(GROUP_COLORS[tile.group]));
+      const band = new Graphics()
+        .rect(b.x, b.y, b.w, b.h)
+        .fill(hexToPixiColor(GROUP_COLORS[tile.group]));
       container.addChild(band);
     }
 
@@ -774,9 +780,7 @@ function drawHouseIcon(g: Graphics, x: number, y: number, s: number) {
   const roofH = s * 0.45;
   const bodyY = y + roofH;
   const bodyH = s - roofH;
-  g.rect(x, bodyY, s, bodyH)
-    .fill(HOUSE_COLOR)
-    .stroke({ width: 0.75, color: ICON_STROKE });
+  g.rect(x, bodyY, s, bodyH).fill(HOUSE_COLOR).stroke({ width: 0.75, color: ICON_STROKE });
   g.poly([x - s * 0.08, bodyY, x + s + s * 0.08, bodyY, x + s / 2, y])
     .fill(HOUSE_COLOR)
     .stroke({ width: 0.75, color: ICON_STROKE });

@@ -4,12 +4,7 @@ import { getActingPlayerId, type Action } from "@aadesipo/engine";
 import { useSession } from "@/state/session";
 import { useOnlineGameView } from "@/multiplayer/onlineGameStore";
 import { fetchActiveGameForRoom, fetchRoomSeats, fetchRoomInfo } from "@/multiplayer/onlineClient";
-import {
-  Board,
-  WALK_STEP_CAP,
-  WALK_START_DELAY_MS,
-  APPROX_MS_PER_TILE,
-} from "../board/Board";
+import { Board, WALK_STEP_CAP, WALK_START_DELAY_MS, APPROX_MS_PER_TILE } from "../board/Board";
 import { PlayerStrip } from "../hud/PlayerStrip";
 import { ActionDock } from "../hud/ActionDock";
 import { BuyPropertySheet } from "../sheets/BuyPropertySheet";
@@ -149,8 +144,7 @@ export function OnlineGameScreen() {
           creditorName: debt.creditorId
             ? (displaySetups.find((p) => p.id === debt.creditorId)?.displayName ?? debt.creditorId)
             : "the bank",
-          canSettle:
-            (game.players.find((p) => p.id === actingPlayerId)?.cash ?? 0) >= debt.amount,
+          canSettle: (game.players.find((p) => p.id === actingPlayerId)?.cash ?? 0) >= debt.amount,
           onSettle: () => dispatch({ type: "SettleDebt", playerId: actingPlayerId }),
           onDeclareBankruptcy: () =>
             dispatch({ type: "DeclareBankruptcy", playerId: actingPlayerId }),

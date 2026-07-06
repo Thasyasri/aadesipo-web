@@ -98,7 +98,9 @@ function DetailRow({
   return (
     <div className="flex justify-between gap-4 text-body">
       <span className="text-text-secondary">{label}</span>
-      <span className={`text-right font-semibold tabular-nums ${valueClass ?? "text-text-primary"}`}>
+      <span
+        className={`text-right font-semibold tabular-nums ${valueClass ?? "text-text-primary"}`}
+      >
         {value}
       </span>
     </div>

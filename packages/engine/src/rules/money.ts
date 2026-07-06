@@ -86,7 +86,5 @@ export function canAfford(player: PlayerState, amount: number): boolean {
 /** Sum of bank + every player's cash + the Free Parking pot. Should be
  *  invariant across every action (the pot just parks money in transit). */
 export function totalMoneyInSystem(state: GameState): number {
-  return (
-    state.bank + state.freeParkingPot + state.players.reduce((sum, p) => sum + p.cash, 0)
-  );
+  return state.bank + state.freeParkingPot + state.players.reduce((sum, p) => sum + p.cash, 0);
 }

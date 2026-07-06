@@ -48,12 +48,7 @@ import {
   rejectTrade as rulesRejectTrade,
   loanCap,
 } from "../rules/index.js";
-import {
-  CHANCE_TABLE,
-  FUNNY_TABLE,
-  applyEventEffect,
-  type EventOutcome,
-} from "../events/index.js";
+import { CHANCE_TABLE, FUNNY_TABLE, applyEventEffect, type EventOutcome } from "../events/index.js";
 
 export function createInitialState(
   seed: string,
@@ -248,7 +243,15 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
     }
 
     if (!canAfford(player, JAIL_BAIL_COST)) {
-      return enterDebtOrBankrupt(next, playerId, JAIL_BAIL_COST, null, "jail-bail", { diceSum }, events);
+      return enterDebtOrBankrupt(
+        next,
+        playerId,
+        JAIL_BAIL_COST,
+        null,
+        "jail-bail",
+        { diceSum },
+        events,
+      );
     }
     next = payToBank(next, playerId, JAIL_BAIL_COST);
     next = releaseFromJail(next, playerId);
@@ -783,7 +786,10 @@ function handleSettleDebt(state: GameState, playerId: string): ActionResult {
       });
     }
   } else {
-    next = debt.reason === "tax" ? payTax(next, playerId, debt.amount) : payToBank(next, playerId, debt.amount);
+    next =
+      debt.reason === "tax"
+        ? payTax(next, playerId, debt.amount)
+        : payToBank(next, playerId, debt.amount);
     if (debt.reason === "tax") events.push({ type: "TaxPaid", playerId, amount: debt.amount });
   }
   next = { ...next, pendingDebt: null };

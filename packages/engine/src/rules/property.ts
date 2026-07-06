@@ -110,8 +110,9 @@ export function unmortgageProperty(state: GameState, position: number): GameStat
 
 export function buildingUnlockReached(state: GameState): boolean {
   return (
-    BOARD.filter((tile) => tile.type === "property").filter((tile) => ownerOf(state, tile.position) !== null)
-      .length >= BUILDING_UNLOCK_PROPERTY_COUNT
+    BOARD.filter((tile) => tile.type === "property").filter(
+      (tile) => ownerOf(state, tile.position) !== null,
+    ).length >= BUILDING_UNLOCK_PROPERTY_COUNT
   );
 }
 

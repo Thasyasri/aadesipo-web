@@ -49,8 +49,8 @@ export function ActionDock({
     return (
       <div className="flex flex-col gap-3 border-t border-bg-raised p-4">
         <p className="text-center text-body text-semantic-warn">
-          You owe {formatRupees(debtPrompt.amount)} to {debtPrompt.creditorName}. Raise funds to pay,
-          or go bankrupt.
+          You owe {formatRupees(debtPrompt.amount)} to {debtPrompt.creditorName}. Raise funds to
+          pay, or go bankrupt.
         </p>
         <div className="flex flex-wrap items-center justify-center gap-3">
           <Button variant="secondary" onClick={onOpenProperties}>

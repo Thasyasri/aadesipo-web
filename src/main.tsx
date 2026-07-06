@@ -6,8 +6,10 @@ import { initAnalytics } from "./services/analytics";
 import { registerPersistenceFlush } from "./services/db";
 import "./index.css";
 
-initSentry();
-initAnalytics();
+// Both load their heavy SDK dynamically and only when configured, so these
+// are fire-and-forget — the app renders immediately without waiting on them.
+void initSentry();
+void initAnalytics();
 registerPersistenceFlush();
 
 const rootElement = document.getElementById("root");

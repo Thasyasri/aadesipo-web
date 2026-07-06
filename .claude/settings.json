@@ -69,8 +69,6 @@
       "Bash(git remote *)",
       "Bash(git push *)"
     ],
-    "additionalDirectories": [
-      "G:\\aadesipo-web\\tmp-screenshots"
-    ]
+    "additionalDirectories": ["G:\\aadesipo-web\\tmp-screenshots"]
   }
 }

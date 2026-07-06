@@ -554,20 +554,14 @@ function WaitingView({
   );
 }
 
-function OtherPendingView({
-  game,
-  players,
-}: {
-  game: GameState;
-  players: readonly PlayerSetup[];
-}) {
+function OtherPendingView({ game, players }: { game: GameState; players: readonly PlayerSetup[] }) {
   const trade = game.pendingTrade!;
   return (
     <div className="flex flex-col gap-3">
       <h2 className="font-display text-title">A trade is in progress</h2>
       <p className="text-body text-text-secondary">
-        {nameFor(players, trade.proposerId)} and {nameFor(players, trade.recipientId)} have a pending
-        trade. You can propose your own once it&apos;s resolved.
+        {nameFor(players, trade.proposerId)} and {nameFor(players, trade.recipientId)} have a
+        pending trade. You can propose your own once it&apos;s resolved.
       </p>
     </div>
   );
@@ -592,9 +586,24 @@ function TradesHistory({
   return (
     <div className="flex flex-col gap-5">
       <h2 className="font-display text-title">Trade history</h2>
-      <HistorySection title="Ongoing" records={ongoing} players={players} empty="No trade in progress." />
-      <HistorySection title="Past (accepted)" records={accepted} players={players} empty="No accepted trades yet." />
-      <HistorySection title="Failed (rejected)" records={rejected} players={players} empty="No rejected trades yet." />
+      <HistorySection
+        title="Ongoing"
+        records={ongoing}
+        players={players}
+        empty="No trade in progress."
+      />
+      <HistorySection
+        title="Past (accepted)"
+        records={accepted}
+        players={players}
+        empty="No accepted trades yet."
+      />
+      <HistorySection
+        title="Failed (rejected)"
+        records={rejected}
+        players={players}
+        empty="No rejected trades yet."
+      />
     </div>
   );
 }
@@ -658,13 +667,13 @@ function TradeHelp() {
       <ul className="flex list-disc flex-col gap-2 pl-5 text-body text-text-secondary">
         <li>Offer any mix of your owned properties and/or cash, and ask for any mix back.</li>
         <li>
-          Trades aren&apos;t tied to turn order — you can propose or respond at any time, whoever&apos;s
-          rolling.
+          Trades aren&apos;t tied to turn order — you can propose or respond at any time,
+          whoever&apos;s rolling.
         </li>
         <li>Only one trade can be pending at a time.</li>
         <li>
-          AI opponents respond after a brief &ldquo;thinking&rdquo; pause; other players sharing this
-          device can respond any time from the Trade button.
+          AI opponents respond after a brief &ldquo;thinking&rdquo; pause; other players sharing
+          this device can respond any time from the Trade button.
         </li>
         <li>Decisions are accept or reject only — there are no counter-offers in this version.</li>
         <li>Every trade&apos;s outcome (accepted or rejected) is recorded in Trade history.</li>

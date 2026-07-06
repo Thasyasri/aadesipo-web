@@ -36,8 +36,8 @@ export function PropertiesSheet({
       <h2 className="mb-1 font-display text-title">Your properties</h2>
       {supply && (
         <p className="mb-4 text-caption text-text-secondary">
-          Bank stock: {supply.houses} {supply.houses === 1 ? "house" : "houses"} ·{" "}
-          {supply.hotels} {supply.hotels === 1 ? "hotel" : "hotels"} left
+          Bank stock: {supply.houses} {supply.houses === 1 ? "house" : "houses"} · {supply.hotels}{" "}
+          {supply.hotels === 1 ? "hotel" : "hotels"} left
         </p>
       )}
       <LoanSection game={game} actingPlayerId={actingPlayerId} dispatch={dispatch} />

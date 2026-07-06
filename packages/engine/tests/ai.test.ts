@@ -161,8 +161,13 @@ function simulateMixedGame(
 
 describe("AI valuation", () => {
   it("boosts a property's value once the global building unlock is reached", () => {
-    const propertyPositions = BOARD.filter((tile) => tile.type === "property").map((tile) => tile.position);
-    const ownedPositions = [1, ...propertyPositions.filter((position) => position !== 1 && position !== 3).slice(0, 16)];
+    const propertyPositions = BOARD.filter((tile) => tile.type === "property").map(
+      (tile) => tile.position,
+    );
+    const ownedPositions = [
+      1,
+      ...propertyPositions.filter((position) => position !== 1 && position !== 3).slice(0, 16),
+    ];
 
     const baselineState = createInitialState("ai-value-baseline", CLASSIC_MODE, ["p1", "p2"]);
     const unlockedState = {
@@ -510,7 +515,9 @@ describe("personalities are statistically distinguishable, not just different la
 
   it("Gambler builds when a Miser would conserve cash", () => {
     const buildState = (playerId: string, cash: number): GameState => {
-      const propertyPositions = BOARD.filter((tile) => tile.type === "property").map((tile) => tile.position);
+      const propertyPositions = BOARD.filter((tile) => tile.type === "property").map(
+        (tile) => tile.position,
+      );
       const unlockPositions = propertyPositions.slice(0, 17);
       const properties = Object.fromEntries(
         unlockPositions.map((position) => [
@@ -525,9 +532,10 @@ describe("personalities are statistically distinguishable, not just different la
       );
       return {
         ...createInitialState(`ai-build-${playerId}`, CLASSIC_MODE, [playerId, "other"]),
-        players: createInitialState(`ai-build-${playerId}`, CLASSIC_MODE, [playerId, "other"]).players.map((p) =>
-          p.id === playerId ? { ...p, cash } : p,
-        ),
+        players: createInitialState(`ai-build-${playerId}`, CLASSIC_MODE, [
+          playerId,
+          "other",
+        ]).players.map((p) => (p.id === playerId ? { ...p, cash } : p)),
         properties,
         currentPlayerIndex: 0,
         turnPhase: "turn-idle",
