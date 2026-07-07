@@ -117,7 +117,7 @@ export function OnlineGameScreen() {
           <p className="mb-4 text-body text-semantic-error">
             {connectError ?? "Could not load this game."}
           </p>
-          <Button variant="primary" onClick={() => navigate("/")}>
+          <Button variant="primary" onClick={() => navigate("/play")}>
             Back to home
           </Button>
         </Card>
@@ -250,7 +250,7 @@ export function OnlineGameScreen() {
         game={game}
         players={displaySetups}
         mode="online"
-        onPlayAgain={() => navigate("/")}
+        onPlayAgain={() => navigate("/play")}
       />
     </>
   );

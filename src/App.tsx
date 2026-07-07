@@ -3,6 +3,8 @@ import { BrowserRouter, Route, Routes } from "react-router";
 import { ThemeProvider } from "@/theme/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
 import { RootLayout } from "@/routes/RootLayout";
+import { SiteLayout } from "@/features/site/SiteLayout";
+import { Landing } from "@/features/site/Landing";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { ProfileScreen } from "@/features/profile/ProfileScreen";
 import { SettingsScreen } from "@/features/settings/SettingsScreen";
@@ -34,8 +36,15 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
+            {/* Public marketing site — committed dark "Contemporary Indian
+                Premium" world, isolated from the in-app theme. */}
+            <Route element={<SiteLayout />}>
+              <Route index element={<Landing />} />
+            </Route>
+            {/* In-app chrome. The game setup/home lives at /play now that the
+                marketing Landing owns "/". */}
             <Route element={<RootLayout />}>
-              <Route index element={<HomeScreen />} />
+              <Route path="play" element={<HomeScreen />} />
               <Route path="profile" element={<ProfileScreen />} />
               <Route path="settings" element={<SettingsScreen />} />
               <Route

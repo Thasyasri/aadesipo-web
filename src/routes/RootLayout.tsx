@@ -22,7 +22,7 @@ export function RootLayout() {
       <header className="flex items-center justify-between border-b border-bg-raised px-6 py-4">
         <span className="font-display text-title text-brand-primary-strong">AadesiPo</span>
         <nav className="flex items-center gap-2">
-          <NavLink to="/" end className={navLinkClass}>
+          <NavLink to="/play" className={navLinkClass}>
             Home
           </NavLink>
           <NavLink to="/profile" className={navLinkClass}>

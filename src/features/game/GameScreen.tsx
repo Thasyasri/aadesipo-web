@@ -96,7 +96,7 @@ export function GameScreen() {
           <p className="mb-4 text-body text-text-secondary">
             No game in progress — start one from the home screen.
           </p>
-          <Button variant="primary" onClick={() => navigate("/")}>
+          <Button variant="primary" onClick={() => navigate("/play")}>
             Back to home
           </Button>
         </Card>

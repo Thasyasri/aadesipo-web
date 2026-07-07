@@ -28,7 +28,7 @@ export function JoinRoomScreen() {
         {error ? (
           <>
             <p className="mb-4 text-body text-semantic-error">{error}</p>
-            <Button variant="primary" onClick={() => navigate("/")}>
+            <Button variant="primary" onClick={() => navigate("/play")}>
               Back to home
             </Button>
           </>
