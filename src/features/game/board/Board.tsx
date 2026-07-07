@@ -511,8 +511,9 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
       const ownership = game.properties[tile.position];
       const owned = !!ownership?.ownerId;
 
-      // Price — only while unowned.
-      overlay.priceText.visible = !owned;
+      // Price — always shown (like a real board). It sits on the outer rim,
+      // clear of the owner badge on the inner colour band, so both read at once.
+      overlay.priceText.visible = true;
 
       // Owner marker — a neutral chip on the band showing the owner's initial,
       // so ownership reads by letter, never by a color that might clash with
