@@ -37,6 +37,17 @@ function countOwnedInGroup(state: GameState, playerId: string, group: PropertyGr
   return propertiesInGroup(group).filter((p) => ownerOf(state, p.position) === playerId).length;
 }
 
+/**
+ * Whether a player owns EVERY property in a colour group (a monopoly), which
+ * doubles the base rent on the group's unimproved tiles. Compares against the
+ * group's actual size, so it works for the two-property groups (brown,
+ * dark-blue) too — not just the three-property ones.
+ */
+export function hasMonopoly(state: GameState, playerId: string, group: PropertyGroup): boolean {
+  const inGroup = propertiesInGroup(group);
+  return inGroup.length > 0 && countOwnedInGroup(state, playerId, group) === inGroup.length;
+}
+
 function countOwnedOfType(state: GameState, playerId: string, type: "transit" | "utility"): number {
   return BOARD.filter((t) => t.type === type).filter((t) => ownerOf(state, t.position) === playerId)
     .length;
@@ -62,7 +73,7 @@ export function calculateRent(state: GameState, position: number, diceSum: numbe
       ];
       return tiers[ownership.houses - 1] ?? tile.rent.base;
     }
-    const monopoly = countOwnedInGroup(state, ownership.ownerId, tile.group) >= 3;
+    const monopoly = hasMonopoly(state, ownership.ownerId, tile.group);
     return monopoly ? tile.rent.base * 2 : tile.rent.base;
   }
 

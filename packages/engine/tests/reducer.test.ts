@@ -1436,3 +1436,55 @@ describe("sell property to auction", () => {
     );
   });
 });
+
+describe("monopoly doubles base rent", () => {
+  function ownAll(base: GameState, positions: readonly number[], ownerId: string): GameState {
+    const properties = { ...base.properties };
+    for (const pos of positions) {
+      properties[pos] = { ownerId, houses: 0, hasHotel: false, isMortgaged: false };
+    }
+    return { ...base, properties };
+  }
+
+  it("doubles base rent when a full colour set is owned — including two-property groups", () => {
+    for (const group of ["brown", "dark-blue", "pink"] as const) {
+      const tiles = BOARD.filter((t) => t.type === "property" && t.group === group);
+      const first = tiles[0];
+      if (!first || first.type !== "property") throw new Error(`no ${group} tiles`);
+      const base = freshGame(["p1", "p2"]);
+
+      // Owning only one of the group: plain base rent.
+      const partial = ownAll(base, [first.position], "p1");
+      expect(calculateRent(partial, first.position, 7)).toBe(first.rent.base);
+
+      // Owning the whole group: base rent doubled on the unimproved tile.
+      const full = ownAll(
+        base,
+        tiles.map((t) => t.position),
+        "p1",
+      );
+      expect(calculateRent(full, first.position, 7)).toBe(first.rent.base * 2);
+    }
+  });
+
+  it("does not double once a house is built (house-tier rent takes over)", () => {
+    const brown = BOARD.filter((t) => t.type === "property" && t.group === "brown");
+    const first = brown[0];
+    if (!first || first.type !== "property") throw new Error("no brown tiles");
+    const base = freshGame(["p1", "p2"]);
+    const full = ownAll(
+      base,
+      brown.map((t) => t.position),
+      "p1",
+    );
+    // Add one house to the inspected tile.
+    const withHouse: GameState = {
+      ...full,
+      properties: {
+        ...full.properties,
+        [first.position]: { ownerId: "p1", houses: 1, hasHotel: false, isMortgaged: false },
+      },
+    };
+    expect(calculateRent(withHouse, first.position, 7)).toBe(first.rent.oneHouse);
+  });
+});

@@ -7,6 +7,7 @@ import {
   MAX_JAIL_TURNS,
   calculateRent,
   getTile,
+  hasMonopoly,
   isOwnable,
   ownershipAt,
   type EventOutcome,
@@ -350,8 +351,14 @@ function RentTable({
   if (tile.type === "property") {
     const houses = ownership?.houses ?? 0;
     const hotel = ownership?.hasHotel === true;
+    // Owning the whole colour set doubles the base rent on the unimproved tile.
+    const monopoly = ownership?.ownerId ? hasMonopoly(game, ownership.ownerId, tile.group) : false;
     rows = [
-      { label: "Base rent", value: formatRupees(tile.rent.base), current: !hotel && houses === 0 },
+      {
+        label: monopoly ? "Base rent (full set ×2)" : "Base rent",
+        value: formatRupees(monopoly ? tile.rent.base * 2 : tile.rent.base),
+        current: !hotel && houses === 0,
+      },
       { label: "1 house", value: formatRupees(tile.rent.oneHouse), current: houses === 1 },
       { label: "2 houses", value: formatRupees(tile.rent.twoHouses), current: houses === 2 },
       { label: "3 houses", value: formatRupees(tile.rent.threeHouses), current: houses === 3 },
