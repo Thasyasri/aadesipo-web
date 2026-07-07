@@ -219,7 +219,7 @@ function makeTileLabelStyle(cell: number): TextStyle {
 function makePriceLabelStyle(cell: number): TextStyle {
   return new TextStyle({
     fill: TEXT_MUTED,
-    fontSize: Math.round(Math.max(8, Math.min(cell * 0.24, 13))),
+    fontSize: Math.round(Math.max(7, Math.min(cell * 0.2, 11))),
     fontFamily: "Inter, system-ui, sans-serif",
     fontWeight: "700",
     align: "center",
@@ -249,26 +249,34 @@ interface TileOverlay {
 }
 
 /**
- * Where a tile's name and price sit. On the side columns the name is
- * rotated vertical; a horizontal price would cut straight across it. So we
- * push the name slightly toward the outer rim and the price toward the
- * board interior — along the tile's outward normal — and give the price the
- * same rotation as the name, so on every side they read as two parallel,
- * non-overlapping lines instead of a crossing tangle.
+ * The unit vector pointing from the board's centre straight out through a
+ * tile's outer edge, derived from the tile's rotation (which encodes its
+ * side). Purely perpendicular to the edge — unlike the board-centre direction
+ * it doesn't skew diagonally near the corners, so labels stay square.
  */
-function tileTextLayout(rect: TileRect, size: number, cell: number) {
+function outwardNormal(rotation: number): readonly [number, number] {
+  if (Math.abs(rotation) < 0.01) return [0, 1]; // bottom row → down
+  if (Math.abs(Math.abs(rotation) - Math.PI) < 0.01) return [0, -1]; // top row → up
+  if (rotation > 0) return [-1, 0]; // left column → left
+  return [1, 0]; // right column → right
+}
+
+/**
+ * Where a tile's code and price sit. The colour band hugs the tile's INNER
+ * edge (facing the board centre), so both labels are placed on the OUTER side
+ * of it, along the tile's outward normal: the code centred in the tile body,
+ * the price further out toward the rim. This keeps text off the colour slip
+ * and stops the code and price from overlapping each other.
+ */
+function tileTextLayout(rect: TileRect, cell: number) {
   const cx = rect.x + rect.width / 2;
   const cy = rect.y + rect.height / 2;
-  let ox = cx - size / 2;
-  let oy = cy - size / 2;
-  const len = Math.hypot(ox, oy) || 1;
-  ox /= len;
-  oy /= len;
+  const [nx, ny] = outwardNormal(rect.rotation);
   return {
-    nameX: cx + ox * cell * 0.12,
-    nameY: cy + oy * cell * 0.12,
-    priceX: cx - ox * cell * 0.3,
-    priceY: cy - oy * cell * 0.3,
+    nameX: cx + nx * cell * 0.05,
+    nameY: cy + ny * cell * 0.05,
+    priceX: cx + nx * cell * 0.34,
+    priceY: cy + ny * cell * 0.34,
     rotation: rect.rotation,
   };
 }
@@ -551,13 +559,7 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
 
       let overlay = overlaysRef.current.get(tile.position);
       if (!overlay) {
-        overlay = createTileOverlay(
-          container,
-          tile,
-          computeTileRect(tile.position, size),
-          size,
-          cell,
-        );
+        overlay = createTileOverlay(container, tile, computeTileRect(tile.position, size), cell);
         overlaysRef.current.set(tile.position, overlay);
       }
 
@@ -653,7 +655,7 @@ function drawStaticBoard(
     const label = new Text({ text: boardTileLabel(tile.name), style: makeTileLabelStyle(cell) });
     label.anchor.set(0.5);
     if (isOwnable(tile)) {
-      const layout = tileTextLayout(rect, size, cell);
+      const layout = tileTextLayout(rect, cell);
       label.x = layout.nameX;
       label.y = layout.nameY;
     } else {
@@ -758,10 +760,9 @@ function createTileOverlay(
   parent: Container,
   tile: Tile,
   rect: TileRect,
-  size: number,
   cell: number,
 ): TileOverlay {
-  const layout = tileTextLayout(rect, size, cell);
+  const layout = tileTextLayout(rect, cell);
   const priceText = new Text({
     text: isOwnable(tile) ? formatRupeesCompact(tile.price) : "",
     style: makePriceLabelStyle(cell),
