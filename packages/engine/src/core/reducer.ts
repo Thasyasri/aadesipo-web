@@ -595,14 +595,20 @@ function handleDeclineProperty(state: GameState, playerId: string, position: num
 /**
  * Put an owned property up for auction to the other players — a fund-raising
  * lever alongside mortgaging. Proceeds go to the seller; if nobody bids, they
- * keep it. Only building-free, unmortgaged property can be listed, and only
- * while the seller is managing their turn (turn-idle) or raising funds for a
- * debt (resolving-debt).
+ * keep it. Only building-free, unmortgaged property can be listed, and only on
+ * the seller's own turn — before their roll, after the tile resolves, or while
+ * raising funds for a debt (see SELLABLE_PHASES).
  */
+const SELLABLE_PHASES: ReadonlySet<GameState["turnPhase"]> = new Set([
+  "awaiting-roll", // manage the board before rolling
+  "turn-idle", // after the tile has resolved
+  "resolving-debt", // raising funds to cover a debt
+]);
+
 function handleSellProperty(state: GameState, playerId: string, position: number): ActionResult {
   const turnError = requireCurrentPlayer(state, playerId);
   if (turnError) return reject(turnError);
-  if (state.turnPhase !== "turn-idle" && state.turnPhase !== "resolving-debt") {
+  if (!SELLABLE_PHASES.has(state.turnPhase)) {
     return reject("You can only sell a property on your own turn");
   }
   if (ownerOf(state, position) !== playerId) return reject("Player does not own this property");

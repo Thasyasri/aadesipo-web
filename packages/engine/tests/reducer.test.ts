@@ -1421,6 +1421,18 @@ describe("sell property to auction", () => {
     expect(won.state.pendingDebt?.debtorId).toBe("p1");
   });
 
+  it("can be started before rolling (awaiting-roll)", () => {
+    const state = sellableGame(["p1", "p2"], { turnPhase: "awaiting-roll" });
+    const sold = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    expect(sold.ok).toBe(true);
+    if (!sold.ok) return;
+    expect(sold.state.turnPhase).toBe("awaiting-auction");
+    // Resolving the sale returns the seller to awaiting-roll to take their turn.
+    const won = applyAction(sold.state, { type: "PlaceBid", playerId: "p2", amount: 50 });
+    if (!won.ok) return;
+    expect(won.state.turnPhase).toBe("awaiting-roll");
+  });
+
   it("can't sell on another player's turn", () => {
     const state = sellableGame(["p1", "p2"]);
     // It's p1's turn (currentPlayerIndex 0); p2 attempting a sale is rejected.
