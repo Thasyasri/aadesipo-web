@@ -5,6 +5,7 @@ import { isOwnable } from "@aadesipo/engine";
 import { GROUP_COLORS } from "@/theme/groupColors";
 import { springs, useMotionPrefs } from "@/theme/motion";
 import { formatRupees } from "@/utils/currency";
+import { tileNameWithCode } from "@/utils/tileCode";
 
 interface PropertyCardProps {
   tile: Tile;
@@ -41,7 +42,7 @@ export function PropertyCard({ tile, ownership, width = 160 }: PropertyCardProps
           <div className="h-8 w-full" style={{ backgroundColor: groupColor }} />
           <div className="mt-3 flex flex-1 flex-col items-center justify-center gap-2 p-3">
             <span className="text-center text-caption font-semibold text-text-primary">
-              {tile.name}
+              {tileNameWithCode(tile.name)}
             </span>
             <span className="text-micro text-text-secondary">{formatRupees(tile.price)}</span>
           </div>

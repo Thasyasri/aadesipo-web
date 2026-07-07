@@ -15,6 +15,7 @@ import { GROUP_COLORS } from "@/theme/groupColors";
 import { PLAYER_COLORS, SEMANTIC_COLORS, hexToPixiColor } from "@/theme/tokens";
 import type { PlayerSetup } from "@/state/gameStore";
 import { formatRupeesCompact } from "@/utils/currency";
+import { tileCode } from "@/utils/tileCode";
 
 interface BoardProps {
   game: GameState;
@@ -85,59 +86,9 @@ const DIE_FACE_2 = [
 
 const MIN_BOARD_SIZE = 240;
 
-/**
- * Short 2–4 letter codes used ONLY for the on-board tile text, so labels stay
- * large and crisp at any board size. The real tile name (and every other
- * detail) is shown when the tile is tapped — see TileDetailSheet. The full
- * name is still used everywhere else (trades, log, victory).
- */
-const BOARD_LABEL_OVERRIDES: Readonly<Record<string, string>> = {
-  // Properties
-  Nizamabad: "NZB",
-  Karimnagar: "KRM",
-  Khammam: "KMM",
-  Nalgonda: "NLG",
-  Warangal: "WL",
-  Kadapa: "KDP",
-  Rajahmundry: "RJM",
-  Kakinada: "KKN",
-  Nellore: "NLR",
-  Guntur: "GNT",
-  Visakhapatnam: "VZG",
-  Vijayawada: "VJW",
-  Tirupati: "TRP",
-  Amaravati: "AMR",
-  Gachibowli: "GCB",
-  "Banjara Hills": "BJH",
-  "Jubilee Hills": "JBH",
-  Charminar: "CHM",
-  "Golconda Fort": "GCF",
-  "Hussain Sagar": "HSG",
-  "Gateway of India": "GOI",
-  "Taj Mahal": "TJM",
-  // Transit
-  "Secunderabad Junction": "SEC",
-  "Kacheguda Station": "KCG",
-  "Begumpet Station": "BGP",
-  "Falaknuma Station": "FLK",
-  // Utilities
-  "Telangana Power Grid": "TPG",
-  "Godavari Water Board": "GWB",
-  // Tax
-  "Income Tax": "IT",
-  "Luxury Tax": "LT",
-  // Corners & event tiles
-  GO: "GO",
-  "Jail / Just Visiting": "JAIL",
-  "Go To Jail": "GTJ",
-  "Free Parking": "FP",
-  Chance: "?",
-  "Sarpanch Gari Dabba": "SGD",
-};
-
-function boardTileLabel(name: string): string {
-  return BOARD_LABEL_OVERRIDES[name] ?? name;
-}
+// The board shows only the short code; `tileCode` and the code map live in the
+// shared @/utils/tileCode module so text surfaces can render `Name (CODE)`.
+const boardTileLabel = tileCode;
 
 interface Box {
   x: number;

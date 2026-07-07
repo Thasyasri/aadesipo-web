@@ -12,7 +12,9 @@ import { PropertiesSheet } from "./sheets/PropertiesSheet";
 import { TileDetailSheet } from "./sheets/TileDetailSheet";
 import { EventTablesSheet } from "./sheets/EventTablesSheet";
 import { TradeSheet } from "./sheets/TradeSheet";
-import { GameLog } from "./GameLog";
+import { ActivitySounds } from "./GameLog";
+import { ActivitySheet } from "./sheets/ActivitySheet";
+import { LastRoll } from "./dice/LastRoll";
 import { VictoryDialog } from "./VictoryDialog";
 import { DiceCeremony } from "./dice/DiceCeremony";
 import { Button } from "@/components/Button";
@@ -39,6 +41,7 @@ export function GameScreen() {
   const [tradeOpen, setTradeOpen] = useState(false);
   const [inspectPosition, setInspectPosition] = useState<number | null>(null);
   const [eventTablesOpen, setEventTablesOpen] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
   // While the token is walking its tiles after a roll, hold back the landing
   // (buy) sheet so it doesn't cover the board — the coin arrives first, then
   // you decide.
@@ -180,6 +183,8 @@ export function GameScreen() {
         <div className="flex w-full min-h-0 flex-col md:w-[32%]">
           <PlayerStrip game={game} players={players} events={recentEvents} />
 
+          <LastRoll events={eventLog} />
+
           {lastError && (
             <p className="px-4 py-2 text-center text-caption text-semantic-error">{lastError}</p>
           )}
@@ -189,6 +194,7 @@ export function GameScreen() {
             actingPlayerId={actingPlayerId}
             isActingPlayerLocal={isActingPlayerLocal}
             onOpenProperties={() => setPropertiesOpen(true)}
+            onOpenActivity={() => setActivityOpen(true)}
             onOpenTrade={() => setTradeOpen(true)}
             tradeBadge={tradeBadge}
             debtPrompt={debtPrompt}
@@ -196,10 +202,17 @@ export function GameScreen() {
             onUndo={() => void undo()}
             dispatch={dispatch}
           />
-
-          <GameLog events={eventLog} players={players} />
         </div>
       </div>
+
+      {/* Sounds fire even while the activity list is closed. */}
+      <ActivitySounds events={eventLog} />
+      <ActivitySheet
+        events={eventLog}
+        players={players}
+        open={activityOpen}
+        onClose={() => setActivityOpen(false)}
+      />
 
       <DiceCeremony events={recentEvents} />
       {!walking && (
@@ -223,12 +236,7 @@ export function GameScreen() {
         open={propertiesOpen}
         onClose={() => setPropertiesOpen(false)}
         dispatch={dispatch}
-      />
-      <TileDetailSheet
-        game={game}
-        players={players}
-        position={inspectPosition}
-        onClose={() => setInspectPosition(null)}
+        onInspect={setInspectPosition}
       />
       <EventTablesSheet open={eventTablesOpen} onClose={() => setEventTablesOpen(false)} />
       {localHumanId && (
@@ -241,8 +249,17 @@ export function GameScreen() {
           open={tradeOpen}
           onClose={() => setTradeOpen(false)}
           dispatch={dispatch}
+          onInspect={setInspectPosition}
         />
       )}
+      {/* Rendered last so its portal layers on top of the Properties/Trade
+          sheets when a name is tapped for inspection. */}
+      <TileDetailSheet
+        game={game}
+        players={players}
+        position={inspectPosition}
+        onClose={() => setInspectPosition(null)}
+      />
       <VictoryDialog
         game={game}
         players={players}

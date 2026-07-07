@@ -5,6 +5,7 @@ import {
   GO_SALARY,
   JAIL_BAIL_COST,
   MAX_JAIL_TURNS,
+  calculateRent,
   getTile,
   isOwnable,
   ownershipAt,
@@ -20,6 +21,7 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { GROUP_COLORS } from "@/theme/groupColors";
 import type { PlayerSetup } from "@/state/gameStore";
 import { formatRupees } from "@/utils/currency";
+import { tileNameWithCode } from "@/utils/tileCode";
 
 // A subtle accent dot per non-ownable tile type, echoing its board role.
 const TYPE_ACCENT: Record<string, string> = {
@@ -233,6 +235,9 @@ function TileDetail({
     ? (players.find((p) => p.id === ownership.ownerId)?.displayName ?? ownership.ownerId)
     : null;
   const swatch = tile.type === "property" ? GROUP_COLORS[tile.group] : "#5A6284";
+  // The single rent this tile charges *right now* (rents don't stack — it's the
+  // one tier for the current buildings/set). Only meaningful once owned.
+  const rentNow = currentRentLabel(game, tile, ownership);
 
   return (
     <div className="flex flex-col gap-4">
@@ -242,7 +247,7 @@ function TileDetail({
           style={{ backgroundColor: swatch }}
           aria-hidden="true"
         />
-        <h2 className="font-display text-title">{tile.name}</h2>
+        <h2 className="font-display text-title">{tileNameWithCode(tile.name)}</h2>
       </div>
 
       <div className="flex flex-col gap-2">
@@ -260,13 +265,40 @@ function TileDetail({
       </div>
 
       <div>
-        <h3 className="mb-2 text-caption font-semibold uppercase tracking-wide text-text-secondary">
-          {tile.type === "property" ? "Rent table" : "Rent"}
-        </h3>
+        <div className="mb-2 flex items-baseline justify-between gap-2">
+          <h3 className="text-caption font-semibold uppercase tracking-wide text-text-secondary">
+            {tile.type === "property" ? "Rent table" : "Rent"}
+          </h3>
+          {rentNow && (
+            <span className="text-body font-bold text-brand-primary">Now: {rentNow}</span>
+          )}
+        </div>
         <RentTable game={game} tile={tile} ownership={ownership} />
+        <p className="mt-2 text-micro text-text-disabled">
+          Rent is the single amount for the current level — it doesn&apos;t add up across tiers.
+        </p>
       </div>
     </div>
   );
+}
+
+/**
+ * The rent this tile charges right now — a single tier, not a sum. Null until
+ * owned. Utilities depend on the dice, so they read as a multiplier.
+ */
+function currentRentLabel(
+  game: GameState,
+  tile: PropertyTile | TransitTile | UtilityTile,
+  ownership: PropertyOwnership | undefined,
+): string | null {
+  if (!ownership?.ownerId) return null;
+  if (ownership.isMortgaged) return "Mortgaged — ₹0";
+  if (tile.type === "utility") {
+    const owned = countOwnedOfType(game, ownership.ownerId, "utility");
+    const mult = tile.diceMultiplierBySetSize[Math.min(Math.max(owned, 1), 2) - 1] ?? 0;
+    return `dice × ${mult}`;
+  }
+  return formatRupees(calculateRent(game, tile.position, 7));
 }
 
 function DetailRow({

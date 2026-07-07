@@ -12,6 +12,7 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { Button } from "@/components/Button";
 import { GROUP_COLORS } from "@/theme/groupColors";
 import { formatRupees } from "@/utils/currency";
+import { tileNameWithCode } from "@/utils/tileCode";
 
 interface PropertiesSheetProps {
   game: GameState;
@@ -19,6 +20,8 @@ interface PropertiesSheetProps {
   open: boolean;
   onClose: () => void;
   dispatch: (action: Action) => void;
+  /** Open a tile's full detail sheet (rent table etc.) without leaving here. */
+  onInspect: (position: number) => void;
 }
 
 export function PropertiesSheet({
@@ -27,6 +30,7 @@ export function PropertiesSheet({
   open,
   onClose,
   dispatch,
+  onInspect,
 }: PropertiesSheetProps) {
   const owned = propertiesOwnedBy(game, actingPlayerId);
   const supply = game.buildingSupply;
@@ -92,7 +96,13 @@ export function PropertiesSheet({
                   />
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-semibold text-text-primary">{tile.name}</span>
+                      <button
+                        type="button"
+                        onClick={() => onInspect(position)}
+                        className="min-w-0 text-left font-semibold text-text-primary underline decoration-dotted underline-offset-2"
+                      >
+                        {tileNameWithCode(tile.name)}
+                      </button>
                       <StatusBadge
                         houses={houses}
                         hasHotel={!!ownership?.hasHotel}

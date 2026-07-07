@@ -13,6 +13,7 @@ import { Button } from "@/components/Button";
 import { GROUP_COLORS } from "@/theme/groupColors";
 import type { PlayerSetup } from "@/state/gameStore";
 import { formatRupees, parseRupeesInput, unitToRupees } from "@/utils/currency";
+import { tileNameWithCode } from "@/utils/tileCode";
 import { assetsValue, tradeBreakdown } from "./tradeValue";
 import { buildTradeHistory, type TradeRecord } from "./tradeHistory";
 
@@ -31,6 +32,8 @@ interface TradeSheetProps {
   open: boolean;
   onClose: () => void;
   dispatch: (action: Action) => void;
+  /** Open a property's full detail sheet from a trade row. */
+  onInspect: (position: number) => void;
 }
 
 type View = "trade" | "history" | "help";
@@ -108,7 +111,8 @@ function tradeableProperties(game: GameState, playerId: string): number[] {
 function assetsText(assets: TradeAssets): string {
   const parts: string[] = [];
   if (assets.cash > 0) parts.push(formatRupees(assets.cash));
-  for (const position of assets.propertyPositions) parts.push(getTile(position).name);
+  for (const position of assets.propertyPositions)
+    parts.push(tileNameWithCode(getTile(position).name));
   const cards = assets.jailFreeCards ?? 0;
   if (cards > 0) parts.push(`${cards} jail-free card${cards > 1 ? "s" : ""}`);
   return parts.length ? parts.join(" · ") : "Nothing";
@@ -126,16 +130,27 @@ function TradeMain({
   open,
   onClose,
   dispatch,
+  onInspect,
 }: TradeSheetProps) {
   const pending = game.pendingTrade;
 
   if (pending) {
     // Responding is decoupled from turn order: any local recipient can answer.
     if (isLocalHuman(localPlayerIds, pending.recipientId)) {
-      return <RespondView game={game} players={players} dispatch={dispatch} onClose={onClose} />;
+      return (
+        <RespondView
+          game={game}
+          players={players}
+          dispatch={dispatch}
+          onClose={onClose}
+          onInspect={onInspect}
+        />
+      );
     }
     if (isLocalHuman(localPlayerIds, pending.proposerId)) {
-      return <WaitingView game={game} players={players} dispatch={dispatch} />;
+      return (
+        <WaitingView game={game} players={players} dispatch={dispatch} onInspect={onInspect} />
+      );
     }
     return <OtherPendingView game={game} players={players} />;
   }
@@ -148,6 +163,7 @@ function TradeMain({
       open={open}
       dispatch={dispatch}
       onClose={onClose}
+      onInspect={onInspect}
     />
   );
 }
@@ -163,6 +179,7 @@ function ProposeFlow({
   open,
   dispatch,
   onClose,
+  onInspect,
 }: {
   game: GameState;
   players: readonly PlayerSetup[];
@@ -170,6 +187,7 @@ function ProposeFlow({
   open: boolean;
   dispatch: (action: Action) => void;
   onClose: () => void;
+  onInspect: (position: number) => void;
 }) {
   const [recipientId, setRecipientId] = useState<string | null>(null);
   const [giveProps, setGiveProps] = useState<readonly number[]>([]);
@@ -264,6 +282,7 @@ function ProposeFlow({
         positions={tradeableProperties(game, currentPlayerId)}
         selected={giveProps}
         onToggle={(pos) => setGiveProps((s) => toggle(s, pos))}
+        onInspect={onInspect}
         cashRupees={giveCashRupees}
         maxCashRupees={unitToRupees(me?.cash ?? 0)}
         onCash={setGiveCashRupees}
@@ -276,6 +295,7 @@ function ProposeFlow({
         positions={tradeableProperties(game, recipientId)}
         selected={getProps}
         onToggle={(pos) => setGetProps((s) => toggle(s, pos))}
+        onInspect={onInspect}
         cashRupees={getCashRupees}
         maxCashRupees={unitToRupees(recipient?.cash ?? 0)}
         onCash={setGetCashRupees}
@@ -309,6 +329,7 @@ function OfferSection({
   positions,
   selected,
   onToggle,
+  onInspect,
   cashRupees,
   maxCashRupees,
   onCash,
@@ -320,6 +341,7 @@ function OfferSection({
   positions: readonly number[];
   selected: readonly number[];
   onToggle: (position: number) => void;
+  onInspect: (position: number) => void;
   cashRupees: number;
   maxCashRupees: number;
   onCash: (rupees: number) => void;
@@ -335,13 +357,14 @@ function OfferSection({
       {positions.length === 0 ? (
         <p className="text-caption text-text-disabled">No tradeable properties.</p>
       ) : (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-col gap-1.5">
           {positions.map((position) => (
-            <PropertyChip
+            <PropertyRow
               key={position}
               position={position}
               active={selected.includes(position)}
-              onClick={() => onToggle(position)}
+              onToggle={() => onToggle(position)}
+              onInspect={() => onInspect(position)}
             />
           ))}
         </div>
@@ -394,25 +417,27 @@ function OfferSection({
   );
 }
 
-function PropertyChip({
+/**
+ * One tradeable property: tap the name to inspect its details, tap Add/Added to
+ * include it in the offer. Two distinct targets so inspecting never toggles.
+ */
+function PropertyRow({
   position,
   active,
-  onClick,
+  onToggle,
+  onInspect,
 }: {
   position: number;
   active: boolean;
-  onClick: () => void;
+  onToggle: () => void;
+  onInspect: () => void;
 }) {
   const tile = getTile(position);
   const color = tile.type === "property" ? GROUP_COLORS[tile.group] : "#5A6284";
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={`flex min-h-9 items-center gap-2 rounded-pill border px-3 py-2 text-caption transition-colors ${
-        active
-          ? "border-brand-primary bg-bg-raised text-text-primary"
-          : "border-bg-raised bg-bg-surface text-text-secondary"
+    <div
+      className={`flex items-center gap-2 rounded-md border px-2 py-1.5 transition-colors ${
+        active ? "border-brand-primary bg-bg-raised" : "border-bg-raised bg-bg-surface"
       }`}
     >
       <span
@@ -420,11 +445,27 @@ function PropertyChip({
         style={{ backgroundColor: color }}
         aria-hidden="true"
       />
-      <span className="font-semibold">{tile.name}</span>
-      <span className="tabular-nums text-text-disabled">
-        {"price" in tile ? formatRupees(tile.price) : ""}
-      </span>
-    </button>
+      <button
+        type="button"
+        onClick={onInspect}
+        className="min-w-0 flex-1 text-left text-caption text-text-primary underline decoration-dotted underline-offset-2"
+      >
+        <span className="font-semibold">{tileNameWithCode(tile.name)}</span>{" "}
+        <span className="tabular-nums text-text-disabled">
+          {"price" in tile ? formatRupees(tile.price) : ""}
+        </span>
+      </button>
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-pressed={active}
+        className={`shrink-0 rounded-pill px-3 py-1 text-caption font-semibold ${
+          active ? "bg-brand-primary text-bg-base" : "bg-bg-raised text-text-secondary"
+        }`}
+      >
+        {active ? "✓ Added" : "Add"}
+      </button>
+    </div>
   );
 }
 
@@ -456,13 +497,44 @@ function ValueBreakdown({ breakdown }: { breakdown: ReturnType<typeof tradeBreak
   );
 }
 
-function OfferReadout({ title, assets }: { title: string; assets: TradeAssets }) {
+function OfferReadout({
+  title,
+  assets,
+  onInspect,
+}: {
+  title: string;
+  assets: TradeAssets;
+  onInspect: (position: number) => void;
+}) {
+  const cards = assets.jailFreeCards ?? 0;
+  const empty = assets.cash === 0 && assets.propertyPositions.length === 0 && cards === 0;
   return (
     <div className="flex flex-col gap-1">
       <h3 className="text-caption font-semibold uppercase tracking-wide text-text-secondary">
         {title}
       </h3>
-      <p className="text-body text-text-primary">{assetsText(assets)}</p>
+      {empty ? (
+        <p className="text-body text-text-primary">Nothing</p>
+      ) : (
+        <div className="flex flex-col gap-1 text-body text-text-primary">
+          {assets.cash > 0 && <span className="tabular-nums">{formatRupees(assets.cash)}</span>}
+          {assets.propertyPositions.map((pos) => (
+            <button
+              key={pos}
+              type="button"
+              onClick={() => onInspect(pos)}
+              className="text-left underline decoration-dotted underline-offset-2"
+            >
+              {tileNameWithCode(getTile(pos).name)}
+            </button>
+          ))}
+          {cards > 0 && (
+            <span>
+              {cards} jail-free card{cards > 1 ? "s" : ""}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -476,11 +548,13 @@ function RespondView({
   players,
   dispatch,
   onClose,
+  onInspect,
 }: {
   game: GameState;
   players: readonly PlayerSetup[];
   dispatch: (action: Action) => void;
   onClose: () => void;
+  onInspect: (position: number) => void;
 }) {
   const trade = game.pendingTrade!;
   const breakdown = tradeBreakdown(trade.recipientGives, trade.proposerGives);
@@ -494,8 +568,8 @@ function RespondView({
         Responding to {nameFor(players, trade.recipientId)} — accept or reject.
       </p>
 
-      <OfferReadout title="They give you" assets={trade.proposerGives} />
-      <OfferReadout title="You give them" assets={trade.recipientGives} />
+      <OfferReadout title="They give you" assets={trade.proposerGives} onInspect={onInspect} />
+      <OfferReadout title="You give them" assets={trade.recipientGives} onInspect={onInspect} />
       <ValueBreakdown breakdown={breakdown} />
 
       <div className="sticky bottom-0 -mx-6 flex gap-3 border-t border-black/10 bg-bg-raised px-6 pb-1 pt-3 dark:border-white/10">
@@ -528,10 +602,12 @@ function WaitingView({
   game,
   players,
   dispatch,
+  onInspect,
 }: {
   game: GameState;
   players: readonly PlayerSetup[];
   dispatch: (action: Action) => void;
+  onInspect: (position: number) => void;
 }) {
   const trade = game.pendingTrade!;
   const breakdown = tradeBreakdown(trade.proposerGives, trade.recipientGives);
@@ -541,8 +617,8 @@ function WaitingView({
       <p className="text-body text-text-secondary">
         Waiting for {nameFor(players, trade.recipientId)}&apos;s response…
       </p>
-      <OfferReadout title="You give" assets={trade.proposerGives} />
-      <OfferReadout title="You get" assets={trade.recipientGives} />
+      <OfferReadout title="You give" assets={trade.proposerGives} onInspect={onInspect} />
+      <OfferReadout title="You get" assets={trade.recipientGives} onInspect={onInspect} />
       <ValueBreakdown breakdown={breakdown} />
       <Button
         variant="tertiary"

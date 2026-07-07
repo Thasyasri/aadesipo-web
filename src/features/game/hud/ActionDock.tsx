@@ -8,6 +8,8 @@ interface ActionDockProps {
   actingPlayerId: string;
   isActingPlayerLocal: boolean;
   onOpenProperties: () => void;
+  /** Opens the activity/history sheet (kept off-screen behind a button). */
+  onOpenActivity: () => void;
   /** Opens the trade sheet. Wired in both offline and online screens; only
    *  omitted when there is no local human who could propose a trade. */
   onOpenTrade?: () => void;
@@ -33,6 +35,7 @@ export function ActionDock({
   actingPlayerId,
   isActingPlayerLocal,
   onOpenProperties,
+  onOpenActivity,
   onOpenTrade,
   tradeBadge,
   debtPrompt,
@@ -95,6 +98,9 @@ export function ActionDock({
           {t("hud.myProperties")}
         </Button>
         {tradeButton}
+        <Button variant="tertiary" onClick={onOpenActivity}>
+          {t("hud.activity")}
+        </Button>
       </div>
     );
   }
@@ -105,6 +111,9 @@ export function ActionDock({
         {t("hud.myProperties")}
       </Button>
       {tradeButton}
+      <Button variant="tertiary" onClick={onOpenActivity}>
+        {t("hud.activity")}
+      </Button>
       {canUndo && onUndo && (
         <Button variant="tertiary" onClick={onUndo}>
           ↩ {t("hud.undo")}

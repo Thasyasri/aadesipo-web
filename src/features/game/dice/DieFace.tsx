@@ -17,8 +17,16 @@ export function DieFace({ value, size = 56 }: DieFaceProps) {
 
   return (
     <div
-      className="grid grid-cols-3 grid-rows-3 gap-1 rounded-lg bg-white p-2 shadow-[var(--shadow-e2)]"
-      style={{ width: size, height: size }}
+      // Padding, gap, and corner radius scale with size so the pips stay
+      // legible from the small last-roll badge up to the big roll ceremony.
+      className="grid grid-cols-3 grid-rows-3 bg-white shadow-[var(--shadow-e2)]"
+      style={{
+        width: size,
+        height: size,
+        padding: size * 0.14,
+        gap: size * 0.07,
+        borderRadius: size * 0.18,
+      }}
       role="img"
       aria-label={`Die showing ${value}`}
     >

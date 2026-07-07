@@ -575,14 +575,16 @@ function handleDeclineProperty(state: GameState, playerId: string, position: num
   const player = requirePlayer(state, playerId);
   if (player.position !== position) return reject("Player is not on this tile");
 
+  const declined: GameEvent = { type: "PropertyDeclined", playerId, position };
+
   // No-auction house rule: a declined property simply stays unowned and the
   // turn resolves, rather than opening it up to the table.
   if (state.houseRules.noAuction) {
-    return accept({ ...state, turnPhase: postTileResolutionPhase(state) }, []);
+    return accept({ ...state, turnPhase: postTileResolutionPhase(state) }, [declined]);
   }
 
   const result = startAuction(state, position, playerId);
-  return accept(result.state, result.events);
+  return accept(result.state, [declined, ...result.events]);
 }
 
 function handleMortgage(state: GameState, playerId: string, position: number): ActionResult {

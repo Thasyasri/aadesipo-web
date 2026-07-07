@@ -208,6 +208,7 @@ export type GameEvent =
        *  movement/jail cards, whose consequences surface as their own events. */
       readonly cashDelta?: number;
     }
+  | { readonly type: "PropertyDeclined"; readonly playerId: string; readonly position: number }
   | { readonly type: "AuctionStarted"; readonly position: number }
   | { readonly type: "AuctionBid"; readonly playerId: string; readonly amount: number }
   | { readonly type: "AuctionPassed"; readonly playerId: string }

@@ -5,9 +5,10 @@ import { DieFace } from "./DieFace";
 import { useMotionPrefs } from "@/theme/motion";
 
 const TUMBLE_MS = 700;
-// Kept short so the dice clear the board quickly and the token's tile-by-tile
-// walk (which starts once the dice settle) plays on a clear board.
-const HOLD_MS = 350;
+// How long the settled result stays up before the overlay clears for the
+// token's walk. The persistent last-roll badge on the panel keeps the numbers
+// visible after this, so it stays short enough not to sit over the walk.
+const HOLD_MS = 600;
 const TUMBLE_INTERVAL_MS = 80;
 const SKIPPABLE_AFTER_MS = 300;
 
