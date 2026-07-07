@@ -1286,3 +1286,153 @@ describe("event cards report their cash movement", () => {
     expect(card.cashDelta).toBe(-50);
   });
 });
+
+describe("sell property to auction", () => {
+  // p1 owns Nizamabad (position 1, price 100, mortgage value 50), and it's p1's
+  // turn to manage their board (turn-idle).
+  function sellableGame(
+    playerIds: readonly string[],
+    opts: {
+      houses?: number;
+      hasHotel?: boolean;
+      isMortgaged?: boolean;
+      turnPhase?: GameState["turnPhase"];
+    } = {},
+  ): GameState {
+    const base = freshGame(playerIds);
+    return {
+      ...base,
+      turnPhase: opts.turnPhase ?? "turn-idle",
+      properties: {
+        ...base.properties,
+        1: {
+          ownerId: "p1",
+          houses: opts.houses ?? 0,
+          hasHotel: opts.hasHotel ?? false,
+          isMortgaged: opts.isMortgaged ?? false,
+        },
+      },
+    };
+  }
+
+  it("auctions the property with the seller excluded and a mortgage-value reserve", () => {
+    const state = sellableGame(["p1", "p2", "p3"]);
+    const result = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const auction = result.state.pendingAuction;
+    expect(result.state.turnPhase).toBe("awaiting-auction");
+    expect(auction?.sellerId).toBe("p1");
+    expect(auction?.minBid).toBe(50); // Nizamabad's mortgage value
+    expect(auction?.activeBidderIds).not.toContain("p1");
+    expect([...(auction?.activeBidderIds ?? [])].sort()).toEqual(["p2", "p3"]);
+  });
+
+  it("a sole bidder (2-player) wins at their bid and pays the seller", () => {
+    const state = sellableGame(["p1", "p2"]);
+    const p1Cash = state.players[0]!.cash;
+    const p2Cash = state.players[1]!.cash;
+
+    const sold = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    expect(sold.ok).toBe(true);
+    if (!sold.ok) return;
+
+    const won = applyAction(sold.state, { type: "PlaceBid", playerId: "p2", amount: 50 });
+    expect(won.ok).toBe(true);
+    if (!won.ok) return;
+
+    expect(won.state.pendingAuction).toBeNull();
+    expect(won.state.turnPhase).toBe("turn-idle");
+    expect(won.state.properties[1]?.ownerId).toBe("p2");
+    expect(won.state.players.find((p) => p.id === "p1")!.cash).toBe(p1Cash + 50);
+    expect(won.state.players.find((p) => p.id === "p2")!.cash).toBe(p2Cash - 50);
+    // Player-to-player transfer conserves money in the system.
+    expect(totalMoneyInSystem(won.state)).toBe(totalMoneyInSystem(state));
+  });
+
+  it("keeps the property with the seller when nobody bids", () => {
+    const state = sellableGame(["p1", "p2"]);
+    const p1Cash = state.players[0]!.cash;
+
+    const sold = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    if (!sold.ok) return;
+    const passed = applyAction(sold.state, { type: "PassAuction", playerId: "p2" });
+    expect(passed.ok).toBe(true);
+    if (!passed.ok) return;
+
+    expect(passed.state.pendingAuction).toBeNull();
+    expect(passed.state.turnPhase).toBe("turn-idle");
+    expect(passed.state.properties[1]?.ownerId).toBe("p1");
+    expect(passed.state.players.find((p) => p.id === "p1")!.cash).toBe(p1Cash);
+    const voided = passed.events.find((e) => e.type === "AuctionVoided");
+    expect(voided?.type).toBe("AuctionVoided");
+  });
+
+  it("rejects a bid below the reserve", () => {
+    const state = sellableGame(["p1", "p2", "p3"]);
+    const sold = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    if (!sold.ok) return;
+    const bidder = sold.state.pendingAuction!.turnBidderId;
+    const low = applyAction(sold.state, { type: "PlaceBid", playerId: bidder, amount: 40 });
+    expect(low.ok).toBe(false);
+  });
+
+  it("a competitive sale (3-player) resolves to the last standing bidder", () => {
+    const state = sellableGame(["p1", "p2", "p3"]);
+    const sold = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    if (!sold.ok) return;
+    const first = sold.state.pendingAuction!.turnBidderId;
+    const bid = applyAction(sold.state, { type: "PlaceBid", playerId: first, amount: 60 });
+    expect(bid.ok).toBe(true);
+    if (!bid.ok) return;
+    const next = bid.state.pendingAuction!.turnBidderId;
+    const resolved = applyAction(bid.state, { type: "PassAuction", playerId: next });
+    expect(resolved.ok).toBe(true);
+    if (!resolved.ok) return;
+    expect(resolved.state.pendingAuction).toBeNull();
+    expect(resolved.state.properties[1]?.ownerId).toBe(first);
+    expect(resolved.state.players.find((p) => p.id === "p1")!.cash).toBe(
+      state.players[0]!.cash + 60,
+    );
+  });
+
+  it("can't sell a property with buildings or one that's mortgaged", () => {
+    const built = sellableGame(["p1", "p2"], { houses: 2 });
+    expect(applyAction(built, { type: "SellProperty", playerId: "p1", position: 1 }).ok).toBe(
+      false,
+    );
+    const mortgaged = sellableGame(["p1", "p2"], { isMortgaged: true });
+    expect(applyAction(mortgaged, { type: "SellProperty", playerId: "p1", position: 1 }).ok).toBe(
+      false,
+    );
+  });
+
+  it("returns the seller to resolving-debt after a sale mid-debt", () => {
+    const state: GameState = {
+      ...sellableGame(["p1", "p2"], { turnPhase: "resolving-debt" }),
+      pendingDebt: { debtorId: "p1", amount: 300, creditorId: null, reason: "tax" },
+    };
+    const sold = applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 });
+    if (!sold.ok) return;
+    const won = applyAction(sold.state, { type: "PlaceBid", playerId: "p2", amount: 50 });
+    expect(won.ok).toBe(true);
+    if (!won.ok) return;
+    expect(won.state.turnPhase).toBe("resolving-debt");
+    expect(won.state.pendingDebt?.debtorId).toBe("p1");
+  });
+
+  it("can't sell on another player's turn", () => {
+    const state = sellableGame(["p1", "p2"]);
+    // It's p1's turn (currentPlayerIndex 0); p2 attempting a sale is rejected.
+    const owned = {
+      ...state,
+      properties: {
+        ...state.properties,
+        3: { ownerId: "p2", houses: 0, hasHotel: false, isMortgaged: false },
+      },
+    };
+    expect(applyAction(owned, { type: "SellProperty", playerId: "p2", position: 3 }).ok).toBe(
+      false,
+    );
+  });
+});

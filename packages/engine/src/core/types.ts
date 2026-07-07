@@ -67,6 +67,16 @@ export interface AuctionState {
   readonly highestBidderId: string | null;
   readonly activeBidderIds: readonly string[];
   readonly turnBidderId: string;
+  /** Lowest allowed bid — 0 for a bank auction, the property's mortgage value
+   *  (a reserve price) for a player sale. */
+  readonly minBid: number;
+  /** Set when a player is auctioning off a property they own (proceeds go to
+   *  them, not the bank; if nobody bids they keep it). Null for the usual
+   *  bank auction of an unowned tile. */
+  readonly sellerId: string | null;
+  /** Turn phase to restore once the auction resolves — so a mid-turn sale
+   *  returns the seller to turn-idle (or resolving-debt), not a fresh roll. */
+  readonly returnPhase: TurnPhase;
 }
 
 export interface TradeAssets {
@@ -126,6 +136,7 @@ export type Action =
   | { readonly type: "DeclineProperty"; readonly playerId: string; readonly position: number }
   | { readonly type: "PlaceBid"; readonly playerId: string; readonly amount: number }
   | { readonly type: "PassAuction"; readonly playerId: string }
+  | { readonly type: "SellProperty"; readonly playerId: string; readonly position: number }
   | { readonly type: "MortgageProperty"; readonly playerId: string; readonly position: number }
   | { readonly type: "UnmortgageProperty"; readonly playerId: string; readonly position: number }
   | { readonly type: "BuildHouse"; readonly playerId: string; readonly position: number }

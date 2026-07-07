@@ -3,6 +3,7 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { Button } from "@/components/Button";
 import type { PlayerSetup } from "@/state/gameStore";
 import { formatRupees } from "@/utils/currency";
+import { tileNameWithCode } from "@/utils/tileCode";
 
 interface AuctionSheetProps {
   game: GameState;
@@ -32,7 +33,8 @@ export function AuctionSheet({
 
   const tile = getTile(auction.position);
   const player = game.players.find((p) => p.id === actingPlayerId)!;
-  const nextBid = auction.highestBid + BID_INCREMENT;
+  // Honour the reserve (mortgage value) on a sale — the first bid starts there.
+  const nextBid = Math.max(auction.minBid, auction.highestBid + BID_INCREMENT);
   const canBid = player.cash >= nextBid;
   const nameFor = (id: string) => players.find((p) => p.id === id)?.displayName ?? id;
 
@@ -60,13 +62,20 @@ export function AuctionSheet({
         </div>
       }
     >
-      <h2 className="mb-1 font-display text-title">Auction: {tile.name}</h2>
+      <h2 className="mb-1 font-display text-title">Auction: {tileNameWithCode(tile.name)}</h2>
+      {auction.sellerId && (
+        <p className="mb-1 text-caption text-text-secondary">
+          Put up for sale by {nameFor(auction.sellerId)} — the winning bid goes to them.
+        </p>
+      )}
       <p className="text-body text-text-secondary">
         {auction.highestBid > 0 ? (
           <>
             Current bid {formatRupees(auction.highestBid)}
             {auction.highestBidderId && ` by ${nameFor(auction.highestBidderId)}`}
           </>
+        ) : auction.minBid > 0 ? (
+          `No bids yet · reserve ${formatRupees(auction.minBid)}`
         ) : (
           "No bids yet"
         )}

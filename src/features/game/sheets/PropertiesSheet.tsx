@@ -168,6 +168,17 @@ export function PropertiesSheet({
                       Unmortgage ({formatRupees(Math.round(tile.mortgageValue * 1.1))})
                     </Button>
                   )}
+                  {!mortgaged && !hasBuildings && (
+                    <Button
+                      variant="tertiary"
+                      className="col-span-2 w-full !min-w-0 !px-2 !py-2 !text-body"
+                      onClick={() =>
+                        dispatch({ type: "SellProperty", playerId: actingPlayerId, position })
+                      }
+                    >
+                      Sell to highest bidder (auction)
+                    </Button>
+                  )}
                 </div>
                 {(() => {
                   // One prioritised hint, so disabled controls always have a

@@ -191,7 +191,8 @@ function decideAuctionAction(
 ): AiDecision {
   const auction = state.pendingAuction!;
   const player = state.players.find((p) => p.id === playerId)!;
-  const nextBid = auction.highestBid + 10;
+  // Respect the reserve on a sale — the first valid bid can't be below it.
+  const nextBid = Math.max(auction.minBid, auction.highestBid + 10);
 
   const ceiling = maxAuctionBid(state, playerId, auction.position, config.personality);
   const draw = nextFloat(rng);

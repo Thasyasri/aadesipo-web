@@ -146,6 +146,8 @@ export function applyAction(state: GameState, action: Action): ActionResult {
       const [s, e] = withDoublesAwareAuctionPhase(result.state, result.events);
       return accept(s, e);
     }
+    case "SellProperty":
+      return handleSellProperty(state, action.playerId, action.position);
     case "MortgageProperty":
       return handleMortgage(state, action.playerId, action.position);
     case "UnmortgageProperty":
@@ -201,7 +203,10 @@ function withDoublesAwareAuctionPhase(
   state: GameState,
   events: readonly GameEvent[],
 ): [GameState, readonly GameEvent[]] {
-  if (!state.pendingAuction && state.doublesStreak > 0) {
+  // Only a resolved bank auction (which lands on turn-idle) grants a doubles
+  // re-roll. A resolved sale restores its own returnPhase (turn-idle or
+  // resolving-debt) and must not be overridden.
+  if (!state.pendingAuction && state.turnPhase === "turn-idle" && state.doublesStreak > 0) {
     return [{ ...state, turnPhase: "awaiting-roll" }, events];
   }
   return [state, events];
@@ -585,6 +590,42 @@ function handleDeclineProperty(state: GameState, playerId: string, position: num
 
   const result = startAuction(state, position, playerId);
   return accept(result.state, [declined, ...result.events]);
+}
+
+/**
+ * Put an owned property up for auction to the other players — a fund-raising
+ * lever alongside mortgaging. Proceeds go to the seller; if nobody bids, they
+ * keep it. Only building-free, unmortgaged property can be listed, and only
+ * while the seller is managing their turn (turn-idle) or raising funds for a
+ * debt (resolving-debt).
+ */
+function handleSellProperty(state: GameState, playerId: string, position: number): ActionResult {
+  const turnError = requireCurrentPlayer(state, playerId);
+  if (turnError) return reject(turnError);
+  if (state.turnPhase !== "turn-idle" && state.turnPhase !== "resolving-debt") {
+    return reject("You can only sell a property on your own turn");
+  }
+  if (ownerOf(state, position) !== playerId) return reject("Player does not own this property");
+
+  const tile = getTile(position);
+  if (!isOwnable(tile)) return reject("This tile cannot be sold");
+
+  const ownership = ownershipAt(state, position);
+  if (!ownership) return reject("Property is not owned");
+  if (ownership.houses > 0 || ownership.hasHotel) {
+    return reject("Sell the buildings on this property first");
+  }
+  if (ownership.isMortgaged) return reject("Unmortgage this property before selling it");
+
+  const hasBidder = state.players.some((p) => !p.isBankrupt && p.id !== playerId);
+  if (!hasBidder) return reject("No one else is in the game to bid");
+
+  const result = startAuction(state, position, playerId, {
+    sellerId: playerId,
+    returnPhase: state.turnPhase,
+    reserve: tile.mortgageValue,
+  });
+  return accept(result.state, result.events);
 }
 
 function handleMortgage(state: GameState, playerId: string, position: number): ActionResult {
