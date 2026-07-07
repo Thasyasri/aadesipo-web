@@ -20,6 +20,20 @@ export function unitToRupees(rawAmount: number): number {
   return rawAmount * 1000;
 }
 
+/**
+ * Ultra-compact price for the cramped on-board tile labels — `₹1.8L`, `₹2.4L`,
+ * `₹1Cr` — so a rotated price string doesn't run the full height of a side
+ * tile and cross the name. The full `formatRupees` form is used everywhere
+ * there is room (sheets, cards, log).
+ */
+export function formatRupeesCompact(rawAmount: number): string {
+  const amount = Math.round(rawAmount * 1000);
+  if (amount >= 10000000) return `₹${formatDecimal(amount / 10000000)}Cr`;
+  if (amount >= 100000) return `₹${formatDecimal(amount / 100000)}L`;
+  if (amount >= 1000) return `₹${Math.round(amount / 1000)}K`;
+  return `₹${amount.toLocaleString("en-IN")}`;
+}
+
 export function formatRupees(rawAmount: number): string {
   const amount = Math.round(rawAmount * 1000);
 

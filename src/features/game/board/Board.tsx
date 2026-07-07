@@ -14,7 +14,7 @@ import { computeTileRect, type TileRect } from "./tileLayout";
 import { GROUP_COLORS } from "@/theme/groupColors";
 import { PLAYER_COLORS, SEMANTIC_COLORS, hexToPixiColor } from "@/theme/tokens";
 import type { PlayerSetup } from "@/state/gameStore";
-import { formatRupees } from "@/utils/currency";
+import { formatRupeesCompact } from "@/utils/currency";
 
 interface BoardProps {
   game: GameState;
@@ -91,18 +91,30 @@ const MIN_BOARD_SIZE = 240;
  * unchanged; this lookup lives only in the board renderer.
  */
 const BOARD_LABEL_OVERRIDES: Readonly<Record<string, string>> = {
-  "Secunderabad Junction": "SC",
-  "Kacheguda Station": "KCG",
-  "Begumpet Station": "BMT",
-  "Falaknuma Station": "FM",
-  "Hussain Sagar": "H. Sagar",
-  "Telangana Power Grid": "TS Power",
-  "Godavari Water Board": "Water Bd",
+  // Transit — drop the "Station"/"Junction" suffix; context makes it clear.
+  "Secunderabad Junction": "Secbad",
+  "Kacheguda Station": "Kacheguda",
+  "Begumpet Station": "Begumpet",
+  "Falaknuma Station": "Falaknuma",
+  // Utilities — drop the state/river prefix, keep the recognisable noun.
+  "Telangana Power Grid": "Power Grid",
+  "Godavari Water Board": "Water Board",
+  // Long single-word property names shortened to their recognisable root.
+  Nizamabad: "Nizam",
+  Karimnagar: "Karim",
+  Rajahmundry: "Rajmundry",
   Visakhapatnam: "Vizag",
+  Vijayawada: "Vijaywada",
+  Gachibowli: "Gachbowli",
+  // Multi-word property names — keep the distinctive first word.
   "Banjara Hills": "Banjara",
   "Jubilee Hills": "Jubilee",
   "Golconda Fort": "Golconda",
+  "Hussain Sagar": "H. Sagar",
   "Gateway of India": "Gateway",
+  // Corner / event tiles too long to fit their cell.
+  "Jail / Just Visiting": "Jail",
+  "Sarpanch Gari Dabba": "Sarpanch",
 };
 
 function boardTileLabel(name: string): string {
@@ -163,22 +175,38 @@ function measureBoardSize(wrapper: HTMLElement): number {
   return Math.max(MIN_BOARD_SIZE, Math.min(width, viewportWidth, availableHeight));
 }
 
-const tileLabelStyle = new TextStyle({
-  fill: TEXT_PRIMARY,
-  fontSize: 9,
-  fontFamily: "Inter, system-ui, sans-serif",
-  wordWrap: true,
-  wordWrapWidth: 52,
-  align: "center",
-});
+// Tile label + price fonts scale with the board `cell` (size/11) instead of a
+// fixed pixel size, so text stays legible from a tiny phone board (~32px cells)
+// up to a large desktop one (~64px). The wrap width is tied to the tile width
+// too — the old fixed 52px was wider than a phone tile and bled label text into
+// the neighbouring tiles (the overlap the board was suffering from).
+function makeTileLabelStyle(cell: number): TextStyle {
+  const fontSize = Math.round(Math.max(9, Math.min(cell * 0.3, 16)));
+  return new TextStyle({
+    fill: TEXT_PRIMARY,
+    fontSize,
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "600",
+    wordWrap: true,
+    // Break long single words too (Kacheguda, Rajmundry…) so a name wraps
+    // within its tile instead of overflowing along a rotated side tile into
+    // its neighbours.
+    breakWords: true,
+    wordWrapWidth: cell * 0.94,
+    lineHeight: Math.round(fontSize * 1.05),
+    align: "center",
+  });
+}
 
-const priceLabelStyle = new TextStyle({
-  fill: TEXT_MUTED,
-  fontSize: 8,
-  fontFamily: "Inter, system-ui, sans-serif",
-  fontWeight: "700",
-  align: "center",
-});
+function makePriceLabelStyle(cell: number): TextStyle {
+  return new TextStyle({
+    fill: TEXT_MUTED,
+    fontSize: Math.round(Math.max(8, Math.min(cell * 0.24, 13))),
+    fontFamily: "Inter, system-ui, sans-serif",
+    fontWeight: "700",
+    align: "center",
+  });
+}
 
 interface TokenSprite {
   container: Container;
@@ -297,7 +325,10 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
         height: size,
         backgroundColor: BG_BASE,
         antialias: true,
-        resolution: Math.min(window.devicePixelRatio || 1, 2),
+        // Render at the device's pixel ratio (capped at 3) so tile text and
+        // icons stay crisp on high-DPI phones/retina laptops rather than being
+        // upscaled from a 2x raster — the old cap of 2 read as slightly blurry.
+        resolution: Math.min(window.devicePixelRatio || 1, 3),
         autoDensity: true,
       })
       .then(() => {
@@ -601,7 +632,7 @@ function drawStaticBoard(
 
     // Ownable tiles also carry a price line, so nudge their name toward the
     // outer rim to make room; other tiles stay centered as before.
-    const label = new Text({ text: boardTileLabel(tile.name), style: tileLabelStyle });
+    const label = new Text({ text: boardTileLabel(tile.name), style: makeTileLabelStyle(cell) });
     label.anchor.set(0.5);
     if (isOwnable(tile)) {
       const layout = tileTextLayout(rect, size, cell);
@@ -715,8 +746,8 @@ function createTileOverlay(
 ): TileOverlay {
   const layout = tileTextLayout(rect, size, cell);
   const priceText = new Text({
-    text: isOwnable(tile) ? formatRupees(tile.price) : "",
-    style: priceLabelStyle,
+    text: isOwnable(tile) ? formatRupeesCompact(tile.price) : "",
+    style: makePriceLabelStyle(cell),
   });
   priceText.anchor.set(0.5);
   priceText.x = layout.priceX;

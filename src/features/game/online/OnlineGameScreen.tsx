@@ -153,10 +153,10 @@ export function OnlineGameScreen() {
 
   return (
     <>
-      {/* Two-column on desktop (board left, all info/controls right); a single
-          stacked column on phones — identical to the offline layout. */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-4 lg:p-4">
-        <div className="w-full lg:w-[68%] lg:shrink-0">
+      {/* Two-column from tablets up (board left, all info/controls right); a
+          single stacked column on phones — identical to the offline layout. */}
+      <div className="flex flex-col md:flex-row md:items-start md:gap-4 md:p-4">
+        <div className="w-full md:w-[68%] md:shrink-0">
           <Board
             game={game}
             players={displaySetups}
@@ -166,7 +166,7 @@ export function OnlineGameScreen() {
           />
         </div>
 
-        <div className="flex w-full min-h-0 flex-col lg:w-[32%]">
+        <div className="flex w-full min-h-0 flex-col md:w-[32%]">
           <PlayerStrip game={game} players={displaySetups} events={recentEvents} />
 
           {lastError && (
@@ -199,6 +199,7 @@ export function OnlineGameScreen() {
       )}
       <AuctionSheet
         game={game}
+        players={displaySetups}
         actingPlayerId={actingPlayerId}
         isActingPlayerLocal={isActingPlayerLocal}
         dispatch={dispatch}

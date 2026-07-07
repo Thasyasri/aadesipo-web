@@ -159,11 +159,13 @@ export function GameScreen() {
 
   return (
     <>
-      {/* Two-column on desktop (board left, all info/controls right); a single
-          stacked column on phones (board first, everything below it). */}
-      <div className="flex flex-col lg:flex-row lg:items-start lg:gap-4 lg:p-4">
+      {/* Two-column from tablets up (board left, all info/controls right); a
+          single stacked column on phones (board first, everything below it).
+          Engaging at md keeps a portrait tablet's controls beside the board
+          rather than a full screen-height scroll below it. */}
+      <div className="flex flex-col md:flex-row md:items-start md:gap-4 md:p-4">
         {/* Board side — nothing but the board. */}
-        <div className="w-full lg:w-[68%] lg:shrink-0">
+        <div className="w-full md:w-[68%] md:shrink-0">
           <Board
             game={game}
             players={players}
@@ -175,7 +177,7 @@ export function GameScreen() {
 
         {/* Side panel — every piece of game info and control. The activity
             log scrolls internally so the strip and actions stay pinned. */}
-        <div className="flex w-full min-h-0 flex-col lg:w-[32%]">
+        <div className="flex w-full min-h-0 flex-col md:w-[32%]">
           <PlayerStrip game={game} players={players} events={recentEvents} />
 
           {lastError && (
@@ -210,6 +212,7 @@ export function GameScreen() {
       )}
       <AuctionSheet
         game={game}
+        players={players}
         actingPlayerId={actingPlayerId}
         isActingPlayerLocal={isActingPlayerLocal}
         dispatch={dispatch}

@@ -10,7 +10,7 @@ import {
 } from "@aadesipo/engine";
 import { BottomSheet } from "@/components/BottomSheet";
 import { Button } from "@/components/Button";
-import { PropertyCard } from "../PropertyCard";
+import { GROUP_COLORS } from "@/theme/groupColors";
 import { formatRupees } from "@/utils/currency";
 
 interface PropertiesSheetProps {
@@ -44,7 +44,7 @@ export function PropertiesSheet({
       {owned.length === 0 ? (
         <p className="text-body text-text-secondary">You don't own any properties yet.</p>
       ) : (
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-3">
           {owned.map((position) => {
             const tile = getTile(position);
             const ownership = ownershipAt(game, position);
@@ -52,56 +52,86 @@ export function PropertiesSheet({
               return null;
             }
 
+            const groupColor = tile.type === "property" ? GROUP_COLORS[tile.group] : "#5A6284";
+            const houses = ownership?.houses ?? 0;
+            const mortgaged = ownership?.isMortgaged ?? false;
+            const buildingHotel = houses === 4;
+            const outOfStock = supply
+              ? buildingHotel
+                ? supply.hotels < 1
+                : supply.houses < 1
+              : false;
+            const unevenBuild = !canBuildEvenly(game, actingPlayerId, position);
+            const canBuild = tile.type === "property" && !mortgaged && !outOfStock && !unevenBuild;
+            const hasBuildings = houses > 0 || ownership?.hasHotel;
+            const canSell = tile.type === "property" && canSellEvenly(game, actingPlayerId, position);
+            // Why a build/sell control is unavailable — shown as a caption so a
+            // disabled button never reads as a broken control.
+            const buildBlockedReason =
+              tile.type !== "property" || mortgaged
+                ? null
+                : outOfStock
+                  ? buildingHotel
+                    ? "No hotels left in the bank."
+                    : "No houses left in the bank."
+                  : unevenBuild && !hasBuildings
+                    ? "Build evenly across the colour group."
+                    : null;
+
             return (
-              <div key={position} className="flex items-center gap-4">
-                <PropertyCard tile={tile} ownership={ownership} width={100} />
-                <div className="flex flex-1 flex-col gap-2">
-                  {tile.type === "property" && !ownership?.isMortgaged && (
-                    <>
-                      {(() => {
-                        const buildingHotel = (ownership?.houses ?? 0) === 4;
-                        const outOfStock = supply
-                          ? buildingHotel
-                            ? supply.hotels < 1
-                            : supply.houses < 1
-                          : false;
-                        const unevenBuild = !canBuildEvenly(game, actingPlayerId, position);
-                        return (
-                          <Button
-                            variant="secondary"
-                            disabled={outOfStock || unevenBuild}
-                            onClick={() =>
-                              dispatch({ type: "BuildHouse", playerId: actingPlayerId, position })
-                            }
-                          >
-                            {outOfStock
-                              ? buildingHotel
-                                ? "No hotels left in the bank"
-                                : "No houses left in the bank"
-                              : unevenBuild
-                                ? "Build evenly across the group first"
-                                : `Build ${buildingHotel ? "hotel" : "house"} (${formatRupees(tile.buildingCost)})`}
-                          </Button>
-                        );
-                      })()}
-                      {((ownership?.houses ?? 0) > 0 || ownership?.hasHotel) && (
-                        <Button
-                          variant="tertiary"
-                          disabled={!canSellEvenly(game, actingPlayerId, position)}
-                          onClick={() =>
-                            dispatch({ type: "SellHouse", playerId: actingPlayerId, position })
-                          }
-                        >
-                          {canSellEvenly(game, actingPlayerId, position)
-                            ? "Sell a building"
-                            : "Sell evenly first"}
-                        </Button>
-                      )}
-                    </>
-                  )}
-                  {!ownership?.isMortgaged ? (
+              <div
+                key={position}
+                className="flex flex-col gap-2 rounded-md border border-bg-raised bg-bg-surface p-3"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="h-8 w-2 shrink-0 rounded-full"
+                    style={{ backgroundColor: groupColor }}
+                    aria-hidden="true"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-semibold text-text-primary">{tile.name}</span>
+                      <StatusBadge houses={houses} hasHotel={!!ownership?.hasHotel} mortgaged={mortgaged} />
+                    </div>
+                    <span className="text-caption text-text-secondary">
+                      {formatRupees(tile.price)}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  {tile.type === "property" && !mortgaged && (
                     <Button
-                      variant="tertiary"
+                      variant="secondary"
+                      className="w-full !min-w-0 !px-2 !py-2 !text-body"
+                      disabled={!canBuild}
+                      onClick={() =>
+                        dispatch({ type: "BuildHouse", playerId: actingPlayerId, position })
+                      }
+                    >
+                      Build {buildingHotel ? "hotel" : "house"} ({formatRupees(tile.buildingCost)})
+                    </Button>
+                  )}
+                  {tile.type === "property" && !mortgaged && hasBuildings && (
+                    <Button
+                      variant="secondary"
+                      className="w-full !min-w-0 !px-2 !py-2 !text-body"
+                      disabled={!canSell}
+                      onClick={() =>
+                        dispatch({ type: "SellHouse", playerId: actingPlayerId, position })
+                      }
+                    >
+                      Sell building
+                    </Button>
+                  )}
+                  {!mortgaged ? (
+                    <Button
+                      variant="secondary"
+                      className={`w-full !min-w-0 !px-2 !py-2 !text-body ${
+                        tile.type !== "property" ? "col-span-2" : ""
+                      }`}
+                      disabled={!!hasBuildings}
                       onClick={() =>
                         dispatch({ type: "MortgageProperty", playerId: actingPlayerId, position })
                       }
@@ -110,7 +140,8 @@ export function PropertiesSheet({
                     </Button>
                   ) : (
                     <Button
-                      variant="tertiary"
+                      variant="secondary"
+                      className="col-span-2 w-full !min-w-0 !px-2 !py-2 !text-body"
                       onClick={() =>
                         dispatch({
                           type: "UnmortgageProperty",
@@ -119,10 +150,22 @@ export function PropertiesSheet({
                         })
                       }
                     >
-                      Pay off mortgage ({formatRupees(Math.round(tile.mortgageValue * 1.1))})
+                      Unmortgage ({formatRupees(Math.round(tile.mortgageValue * 1.1))})
                     </Button>
                   )}
                 </div>
+                {(() => {
+                  // One prioritised hint, so disabled controls always have a
+                  // plain-language reason and never read as broken.
+                  const hint = hasBuildings
+                    ? !canSell
+                      ? "Sell buildings evenly across the colour group first."
+                      : "Sell all buildings before you can mortgage."
+                    : buildBlockedReason;
+                  return hint ? (
+                    <p className="text-caption text-text-disabled">{hint}</p>
+                  ) : null;
+                })()}
               </div>
             );
           })}
@@ -130,6 +173,40 @@ export function PropertiesSheet({
       )}
     </BottomSheet>
   );
+}
+
+/** Compact building/mortgage status pill shown next to a property's name. */
+function StatusBadge({
+  houses,
+  hasHotel,
+  mortgaged,
+}: {
+  houses: number;
+  hasHotel: boolean;
+  mortgaged: boolean;
+}) {
+  if (mortgaged) {
+    return (
+      <span className="shrink-0 rounded-pill bg-semantic-error/15 px-2 py-0.5 text-micro font-semibold text-semantic-error">
+        Mortgaged
+      </span>
+    );
+  }
+  if (hasHotel) {
+    return (
+      <span className="shrink-0 rounded-pill bg-bg-raised px-2 py-0.5 text-micro font-semibold text-text-secondary">
+        🏨 Hotel
+      </span>
+    );
+  }
+  if (houses > 0) {
+    return (
+      <span className="shrink-0 rounded-pill bg-bg-raised px-2 py-0.5 text-micro font-semibold text-text-secondary">
+        🏠 {houses}
+      </span>
+    );
+  }
+  return null;
 }
 
 /**

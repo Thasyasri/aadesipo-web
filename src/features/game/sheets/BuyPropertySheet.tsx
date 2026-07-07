@@ -39,33 +39,38 @@ export function BuyPropertySheet({
     dispatch({ type: "DeclineProperty", playerId: actingPlayerId, position: tile.position });
 
   return (
-    <BottomSheet open onClose={decline}>
+    <BottomSheet
+      open
+      onClose={decline}
+      footer={
+        <div className="flex gap-3">
+          <Button variant="secondary" className="flex-1" onClick={decline}>
+            Decline
+          </Button>
+          <Button
+            variant="primary"
+            className="flex-1"
+            disabled={!canAfford}
+            onClick={() =>
+              dispatch({ type: "BuyProperty", playerId: actingPlayerId, position: tile.position })
+            }
+          >
+            Buy for {formatRupees(tile.price)}
+          </Button>
+        </div>
+      }
+    >
       <div className="mb-4 flex justify-center">
         <PropertyCard tile={tile} width={140} />
       </div>
-      <p className="mb-1 text-center text-caption text-text-secondary">
+      <p className="text-center text-caption text-text-secondary">
         Tap the card to see the rent table
       </p>
       {!canAfford && (
-        <p className="mb-4 text-center text-caption text-semantic-warn">
+        <p className="mt-2 text-center text-caption text-semantic-warn">
           Not enough cash — declining will send this to auction.
         </p>
       )}
-      <div className="mt-4 flex gap-3">
-        <Button variant="secondary" className="flex-1" onClick={decline}>
-          Decline
-        </Button>
-        <Button
-          variant="primary"
-          className="flex-1"
-          disabled={!canAfford}
-          onClick={() =>
-            dispatch({ type: "BuyProperty", playerId: actingPlayerId, position: tile.position })
-          }
-        >
-          Buy for {formatRupees(tile.price)}
-        </Button>
-      </div>
     </BottomSheet>
   );
 }

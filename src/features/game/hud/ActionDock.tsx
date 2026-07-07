@@ -8,7 +8,8 @@ interface ActionDockProps {
   actingPlayerId: string;
   isActingPlayerLocal: boolean;
   onOpenProperties: () => void;
-  /** Offline only — omitted in online mode, where trades aren't offered. */
+  /** Opens the trade sheet. Wired in both offline and online screens; only
+   *  omitted when there is no local human who could propose a trade. */
   onOpenTrade?: () => void;
   /** A pending trade is waiting on the local human's response. */
   tradeBadge?: boolean;

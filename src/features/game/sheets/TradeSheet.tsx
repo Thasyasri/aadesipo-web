@@ -286,7 +286,9 @@ function ProposeFlow({
 
       <ValueBreakdown breakdown={breakdown} />
 
-      <div className="flex gap-3">
+      {/* Pinned to the bottom of the scroll area so Send stays reachable on
+          short/landscape phones no matter how tall the offer form grows. */}
+      <div className="sticky bottom-0 -mx-6 flex gap-3 border-t border-black/10 bg-bg-raised px-6 pb-1 pt-3 dark:border-white/10">
         <Button variant="secondary" className="flex-1" onClick={() => setRecipientId(null)}>
           Back
         </Button>
@@ -344,7 +346,7 @@ function OfferSection({
           ))}
         </div>
       )}
-      <label className="flex items-center gap-2 text-caption text-text-secondary">
+      <label className="flex flex-wrap items-center gap-2 text-caption text-text-secondary">
         Cash ₹
         <input
           type="number"
@@ -371,7 +373,7 @@ function OfferSection({
             aria-label="Remove a jail-free card"
             disabled={cards <= 0}
             onClick={() => onCards(Math.max(0, cards - 1))}
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-bg-raised font-semibold text-text-primary disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-bg-raised text-lg font-semibold text-text-primary disabled:opacity-40"
           >
             −
           </button>
@@ -381,7 +383,7 @@ function OfferSection({
             aria-label="Add a jail-free card"
             disabled={cards >= maxCards}
             onClick={() => onCards(Math.min(maxCards, cards + 1))}
-            className="flex h-6 w-6 items-center justify-center rounded-full border border-bg-raised font-semibold text-text-primary disabled:opacity-40"
+            className="flex h-9 w-9 items-center justify-center rounded-full border border-bg-raised text-lg font-semibold text-text-primary disabled:opacity-40"
           >
             +
           </button>
@@ -407,7 +409,7 @@ function PropertyChip({
     <button
       type="button"
       onClick={onClick}
-      className={`flex items-center gap-2 rounded-pill border px-3 py-1.5 text-caption transition-colors ${
+      className={`flex min-h-9 items-center gap-2 rounded-pill border px-3 py-2 text-caption transition-colors ${
         active
           ? "border-brand-primary bg-bg-raised text-text-primary"
           : "border-bg-raised bg-bg-surface text-text-secondary"
@@ -496,7 +498,7 @@ function RespondView({
       <OfferReadout title="You give them" assets={trade.recipientGives} />
       <ValueBreakdown breakdown={breakdown} />
 
-      <div className="flex gap-3">
+      <div className="sticky bottom-0 -mx-6 flex gap-3 border-t border-black/10 bg-bg-raised px-6 pb-1 pt-3 dark:border-white/10">
         <Button
           variant="secondary"
           className="flex-1"
