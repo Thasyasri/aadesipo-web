@@ -12,6 +12,8 @@ interface AuctionSheetProps {
   actingPlayerId: string;
   isActingPlayerLocal: boolean;
   dispatch: (action: Action) => void;
+  /** Open the auctioned tile's full detail (rent table etc.) without passing. */
+  onInspect: (position: number) => void;
 }
 
 const BID_INCREMENT = 10;
@@ -22,6 +24,7 @@ export function AuctionSheet({
   actingPlayerId,
   isActingPlayerLocal,
   dispatch,
+  onInspect,
 }: AuctionSheetProps) {
   const auction = game.pendingAuction;
 
@@ -43,7 +46,9 @@ export function AuctionSheet({
   return (
     <BottomSheet
       open
-      onClose={pass}
+      // Backdrop tap / swipe must NOT pass the auction — that's an easy way to
+      // lose it by accident. The only ways out are the explicit Pass or Bid.
+      onClose={() => {}}
       footer={
         <div className="flex gap-3">
           <Button variant="secondary" className="flex-1" onClick={pass}>
@@ -62,7 +67,19 @@ export function AuctionSheet({
         </div>
       }
     >
-      <h2 className="mb-1 font-display text-title">Auction: {tileNameWithCode(tile.name)}</h2>
+      <h2 className="mb-1 font-display text-title">
+        Auction:{" "}
+        <button
+          type="button"
+          onClick={() => onInspect(auction.position)}
+          className="underline decoration-dotted underline-offset-4"
+        >
+          {tileNameWithCode(tile.name)}
+        </button>
+      </h2>
+      <p className="mb-2 text-caption text-text-secondary">
+        Tap the name to see its rent &amp; details.
+      </p>
       {auction.sellerId && (
         <p className="mb-1 text-caption text-text-secondary">
           Put up for sale by {nameFor(auction.sellerId)} — the winning bid goes to them.

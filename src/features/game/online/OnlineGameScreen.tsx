@@ -215,6 +215,7 @@ export function OnlineGameScreen() {
         actingPlayerId={actingPlayerId}
         isActingPlayerLocal={isActingPlayerLocal}
         dispatch={dispatch}
+        onInspect={setInspectPosition}
       />
       <PropertiesSheet
         game={game}
