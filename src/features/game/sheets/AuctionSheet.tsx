@@ -51,7 +51,9 @@ export function AuctionSheet({
             variant="primary"
             className="flex-1"
             disabled={!canBid}
-            onClick={() => dispatch({ type: "PlaceBid", playerId: actingPlayerId, amount: nextBid })}
+            onClick={() =>
+              dispatch({ type: "PlaceBid", playerId: actingPlayerId, amount: nextBid })
+            }
           >
             Bid {formatRupees(nextBid)}
           </Button>

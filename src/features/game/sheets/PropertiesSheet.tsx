@@ -64,7 +64,8 @@ export function PropertiesSheet({
             const unevenBuild = !canBuildEvenly(game, actingPlayerId, position);
             const canBuild = tile.type === "property" && !mortgaged && !outOfStock && !unevenBuild;
             const hasBuildings = houses > 0 || ownership?.hasHotel;
-            const canSell = tile.type === "property" && canSellEvenly(game, actingPlayerId, position);
+            const canSell =
+              tile.type === "property" && canSellEvenly(game, actingPlayerId, position);
             // Why a build/sell control is unavailable — shown as a caption so a
             // disabled button never reads as a broken control.
             const buildBlockedReason =
@@ -92,7 +93,11 @@ export function PropertiesSheet({
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center justify-between gap-2">
                       <span className="truncate font-semibold text-text-primary">{tile.name}</span>
-                      <StatusBadge houses={houses} hasHotel={!!ownership?.hasHotel} mortgaged={mortgaged} />
+                      <StatusBadge
+                        houses={houses}
+                        hasHotel={!!ownership?.hasHotel}
+                        mortgaged={mortgaged}
+                      />
                     </div>
                     <span className="text-caption text-text-secondary">
                       {formatRupees(tile.price)}
@@ -162,9 +167,7 @@ export function PropertiesSheet({
                       ? "Sell buildings evenly across the colour group first."
                       : "Sell all buildings before you can mortgage."
                     : buildBlockedReason;
-                  return hint ? (
-                    <p className="text-caption text-text-disabled">{hint}</p>
-                  ) : null;
+                  return hint ? <p className="text-caption text-text-disabled">{hint}</p> : null;
                 })()}
               </div>
             );
