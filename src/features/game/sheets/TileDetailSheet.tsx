@@ -1,11 +1,18 @@
 import {
   BOARD,
+  CHANCE_TABLE,
+  FUNNY_TABLE,
+  GO_SALARY,
+  JAIL_BAIL_COST,
+  MAX_JAIL_TURNS,
   getTile,
   isOwnable,
   ownershipAt,
+  type EventOutcome,
   type GameState,
   type PropertyOwnership,
   type PropertyTile,
+  type Tile,
   type TransitTile,
   type UtilityTile,
 } from "@aadesipo/engine";
@@ -13,6 +20,19 @@ import { BottomSheet } from "@/components/BottomSheet";
 import { GROUP_COLORS } from "@/theme/groupColors";
 import type { PlayerSetup } from "@/state/gameStore";
 import { formatRupees } from "@/utils/currency";
+
+// A subtle accent dot per non-ownable tile type, echoing its board role.
+const TYPE_ACCENT: Record<string, string> = {
+  tax: "#FF5D5D",
+  chance: "#FFB020",
+  "funny-event": "#FFB020",
+  go: "#2FBF71",
+  jail: "#9AA3C4",
+  "go-to-jail": "#FF5D5D",
+  "free-parking": "#9AA3C4",
+};
+
+const DICE_SUMS = Array.from({ length: 11 }, (_, i) => i + 2); // 2 through 12
 
 interface TileDetailSheetProps {
   game: GameState;
@@ -23,16 +43,179 @@ interface TileDetailSheetProps {
 }
 
 /**
- * Tap-to-inspect detail for any ownable tile — readable at a normal text
- * size no matter how small the tile is on the board. Works for every tile,
- * owned or not, by the current player or anyone.
+ * Tap-to-inspect detail for ANY tile — the board only shows a short code, so
+ * this sheet is where the full name and details live. Readable at a normal
+ * text size no matter how small the tile is on the board.
  */
 export function TileDetailSheet({ game, players, position, onClose }: TileDetailSheetProps) {
   const tile = position !== null ? getTile(position) : null;
   return (
     <BottomSheet open={position !== null} onClose={onClose}>
-      {tile && isOwnable(tile) ? <TileDetail game={game} players={players} tile={tile} /> : null}
+      {tile ? <TileContent game={game} players={players} tile={tile} /> : null}
     </BottomSheet>
+  );
+}
+
+/** Routes a tile to the right detail view by type. */
+function TileContent({
+  game,
+  players,
+  tile,
+}: {
+  game: GameState;
+  players: readonly PlayerSetup[];
+  tile: Tile;
+}) {
+  if (isOwnable(tile)) return <TileDetail game={game} players={players} tile={tile} />;
+
+  const accent = TYPE_ACCENT[tile.type] ?? "#5A6284";
+
+  switch (tile.type) {
+    case "tax":
+      return (
+        <SimpleDetail
+          title={tile.name}
+          accent={accent}
+          description="Land here and pay this tax straight to the bank."
+          rows={[{ label: "You pay", value: formatRupees(tile.amount) }]}
+        />
+      );
+    case "chance":
+      return (
+        <EventDetail
+          title="Chance"
+          accent={accent}
+          description="Landing here triggers an outcome set by your exact dice sum — there's no random draw, so you can read the whole table."
+          table={CHANCE_TABLE}
+        />
+      );
+    case "funny-event":
+      return (
+        <EventDetail
+          title={tile.name}
+          accent={accent}
+          description="A desi twist decided by your exact dice sum — no random draw."
+          table={FUNNY_TABLE}
+        />
+      );
+    case "go":
+      return (
+        <SimpleDetail
+          title="GO"
+          accent={accent}
+          description="Collect your salary each time you pass or land on GO."
+          rows={[{ label: "Salary", value: formatRupees(GO_SALARY) }]}
+        />
+      );
+    case "jail":
+      return (
+        <SimpleDetail
+          title={tile.name}
+          accent={accent}
+          description="Just visiting costs nothing. If you're sent to jail, get out by paying bail, rolling doubles, or serving your time."
+          rows={[
+            { label: "Bail", value: formatRupees(JAIL_BAIL_COST) },
+            { label: "Max turns held", value: String(MAX_JAIL_TURNS) },
+          ]}
+        />
+      );
+    case "go-to-jail":
+      return (
+        <SimpleDetail
+          title="Go To Jail"
+          accent={accent}
+          description="Land here and go straight to Jail — do not pass GO, do not collect your salary."
+        />
+      );
+    case "free-parking":
+      return (
+        <SimpleDetail
+          title="Free Parking"
+          accent={accent}
+          description={
+            game.houseRules.freeParkingJackpot
+              ? "The Free Parking jackpot is on — land here to sweep the whole pot."
+              : "A safe resting spot — nothing happens when you land here."
+          }
+          rows={
+            game.houseRules.freeParkingJackpot
+              ? [{ label: "Current pot", value: formatRupees(game.freeParkingPot) }]
+              : undefined
+          }
+        />
+      );
+  }
+}
+
+/** Header + description + optional key/value rows, for non-ownable tiles. */
+function SimpleDetail({
+  title,
+  accent,
+  description,
+  rows,
+}: {
+  title: string;
+  accent: string;
+  description: string;
+  rows?: ReadonlyArray<{ label: string; value: string }>;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <span
+          className="h-6 w-6 shrink-0 rounded-md"
+          style={{ backgroundColor: accent }}
+          aria-hidden="true"
+        />
+        <h2 className="font-display text-title">{title}</h2>
+      </div>
+      <p className="text-body text-text-secondary">{description}</p>
+      {rows && rows.length > 0 && (
+        <div className="flex flex-col gap-2">
+          {rows.map((r) => (
+            <DetailRow key={r.label} label={r.label} value={r.value} />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Header + description + the full dice-sum outcome table for a Chance /
+ *  funny-event tile. */
+function EventDetail({
+  title,
+  accent,
+  description,
+  table,
+}: {
+  title: string;
+  accent: string;
+  description: string;
+  table: Readonly<Record<number, EventOutcome>>;
+}) {
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-3">
+        <span
+          className="h-6 w-6 shrink-0 rounded-md"
+          style={{ backgroundColor: accent }}
+          aria-hidden="true"
+        />
+        <h2 className="font-display text-title">{title}</h2>
+      </div>
+      <p className="text-body text-text-secondary">{description}</p>
+      <ul className="flex flex-col gap-2">
+        {DICE_SUMS.map((sum) => (
+          <li key={sum} className="flex gap-2 text-body">
+            <span className="w-16 shrink-0 font-semibold tabular-nums text-text-secondary">
+              Roll {sum}
+            </span>
+            <span className="text-text-primary">{table[sum]?.text}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

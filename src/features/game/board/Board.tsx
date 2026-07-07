@@ -23,7 +23,7 @@ interface BoardProps {
   /** The latest action's events — drives step-by-step token movement (each
    *  PlayerMoved is walked tile-by-tile rather than jumped). */
   events?: readonly GameEvent[];
-  /** Tapped an ownable (property/transit/utility) tile — opens its detail sheet. */
+  /** Tapped any tile — opens its detail sheet (full name + details). */
   onSelectTile?: (position: number) => void;
   /** Tapped the center emblem — opens the event-tables sheet. */
   onSelectEmblem?: () => void;
@@ -86,35 +86,53 @@ const DIE_FACE_2 = [
 const MIN_BOARD_SIZE = 240;
 
 /**
- * Shorter labels used ONLY for the cramped on-board text. The real tile
- * name (used everywhere else — inspect sheet, trades, log, victory) is
- * unchanged; this lookup lives only in the board renderer.
+ * Short 2–4 letter codes used ONLY for the on-board tile text, so labels stay
+ * large and crisp at any board size. The real tile name (and every other
+ * detail) is shown when the tile is tapped — see TileDetailSheet. The full
+ * name is still used everywhere else (trades, log, victory).
  */
 const BOARD_LABEL_OVERRIDES: Readonly<Record<string, string>> = {
-  // Transit — drop the "Station"/"Junction" suffix; context makes it clear.
-  "Secunderabad Junction": "Secbad",
-  "Kacheguda Station": "Kacheguda",
-  "Begumpet Station": "Begumpet",
-  "Falaknuma Station": "Falaknuma",
-  // Utilities — drop the state/river prefix, keep the recognisable noun.
-  "Telangana Power Grid": "Power Grid",
-  "Godavari Water Board": "Water Board",
-  // Long single-word property names shortened to their recognisable root.
-  Nizamabad: "Nizam",
-  Karimnagar: "Karim",
-  Rajahmundry: "Rajmundry",
-  Visakhapatnam: "Vizag",
-  Vijayawada: "Vijaywada",
-  Gachibowli: "Gachbowli",
-  // Multi-word property names — keep the distinctive first word.
-  "Banjara Hills": "Banjara",
-  "Jubilee Hills": "Jubilee",
-  "Golconda Fort": "Golconda",
-  "Hussain Sagar": "H. Sagar",
-  "Gateway of India": "Gateway",
-  // Corner / event tiles too long to fit their cell.
-  "Jail / Just Visiting": "Jail",
-  "Sarpanch Gari Dabba": "Sarpanch",
+  // Properties
+  Nizamabad: "NZB",
+  Karimnagar: "KRM",
+  Khammam: "KMM",
+  Nalgonda: "NLG",
+  Warangal: "WL",
+  Kadapa: "KDP",
+  Rajahmundry: "RJM",
+  Kakinada: "KKN",
+  Nellore: "NLR",
+  Guntur: "GNT",
+  Visakhapatnam: "VZG",
+  Vijayawada: "VJW",
+  Tirupati: "TRP",
+  Amaravati: "AMR",
+  Gachibowli: "GCB",
+  "Banjara Hills": "BJH",
+  "Jubilee Hills": "JBH",
+  Charminar: "CHM",
+  "Golconda Fort": "GCF",
+  "Hussain Sagar": "HSG",
+  "Gateway of India": "GOI",
+  "Taj Mahal": "TJM",
+  // Transit
+  "Secunderabad Junction": "SEC",
+  "Kacheguda Station": "KCG",
+  "Begumpet Station": "BGP",
+  "Falaknuma Station": "FLK",
+  // Utilities
+  "Telangana Power Grid": "TPG",
+  "Godavari Water Board": "GWB",
+  // Tax
+  "Income Tax": "IT",
+  "Luxury Tax": "LT",
+  // Corners & event tiles
+  GO: "GO",
+  "Jail / Just Visiting": "JAIL",
+  "Go To Jail": "GTJ",
+  "Free Parking": "FP",
+  Chance: "?",
+  "Sarpanch Gari Dabba": "SGD",
 };
 
 function boardTileLabel(name: string): string {
@@ -645,13 +663,12 @@ function drawStaticBoard(
     label.rotation = rect.rotation;
     container.addChild(label);
 
-    // Ownable tiles are tap-to-inspect; the whole tile is the hit target.
-    if (isOwnable(tile)) {
-      container.eventMode = "static";
-      container.cursor = "pointer";
-      container.hitArea = new Rectangle(rect.x, rect.y, rect.width, rect.height);
-      container.on("pointertap", () => onTileTap(tile.position));
-    }
+    // Every tile is tap-to-inspect (short board codes mean the full name and
+    // details live in the detail sheet); the whole tile is the hit target.
+    container.eventMode = "static";
+    container.cursor = "pointer";
+    container.hitArea = new Rectangle(rect.x, rect.y, rect.width, rect.height);
+    container.on("pointertap", () => onTileTap(tile.position));
 
     stage.addChild(container);
     tileContainers.set(tile.position, container);
