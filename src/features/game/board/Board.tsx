@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Application, Circle, Container, Graphics, Rectangle, Text, TextStyle } from "pixi.js";
+import { Application, Container, Graphics, Text, TextStyle } from "pixi.js";
 import {
   BOARD,
   getActingPlayerId,
@@ -319,13 +319,7 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
         const world = new Container();
         app.stage.addChild(world);
         worldRef.current = world;
-        drawStaticBoard(
-          world,
-          size,
-          tileContainers,
-          (position) => onSelectTileRef.current?.(position),
-          () => onSelectEmblemRef.current?.(),
-        );
+        drawStaticBoard(world, size, tileContainers);
 
         const cell = size / 11;
         const hopHeight = cell * 0.5; // how high the token arcs between tiles
@@ -549,6 +543,33 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
     }
   }, [game, size, ready]);
 
+  // Taps are handled at the DOM level (not via Pixi's event system): we hit-test
+  // the tap coordinates against the tile rects and the centre emblem ourselves.
+  // Pixi's pointer events proved unreliable on some real touch devices (a
+  // high-DPI coordinate-mapping issue that headless emulation didn't show); a
+  // plain DOM click on the canvas host fires consistently everywhere.
+  const handleBoardTap = (e: React.MouseEvent<HTMLDivElement>) => {
+    const host = hostRef.current;
+    if (!host || size <= 0) return;
+    const rect = host.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) return;
+    const x = ((e.clientX - rect.left) / rect.width) * size;
+    const y = ((e.clientY - rect.top) / rect.height) * size;
+
+    // Centre emblem (opens the event tables) — same radius drawCenterEmblem uses.
+    if (Math.hypot(x - size / 2, y - size / 2) <= size * 0.155) {
+      onSelectEmblemRef.current?.();
+      return;
+    }
+    for (const tile of BOARD) {
+      const tr = computeTileRect(tile.position, size);
+      if (x >= tr.x && x <= tr.x + tr.width && y >= tr.y && y <= tr.y + tr.height) {
+        onSelectTileRef.current?.(tile.position);
+        return;
+      }
+    }
+  };
+
   const actingId = game.turnPhase === "game-over" ? null : getActingPlayerId(game);
   const boardLabel =
     game.turnPhase === "game-over"
@@ -567,7 +588,8 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
           ref={hostRef}
           role="img"
           aria-label={boardLabel}
-          className="overflow-hidden rounded-lg"
+          onClick={handleBoardTap}
+          className="cursor-pointer overflow-hidden rounded-lg"
           style={{ width: size, height: size }}
         />
       </div>
@@ -575,13 +597,7 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
   );
 }
 
-function drawStaticBoard(
-  stage: Container,
-  size: number,
-  tileContainers: Map<number, Container>,
-  onTileTap: (position: number) => void,
-  onEmblemTap: () => void,
-) {
+function drawStaticBoard(stage: Container, size: number, tileContainers: Map<number, Container>) {
   const cell = size / 11;
   for (const tile of BOARD) {
     const rect = computeTileRect(tile.position, size);
@@ -616,18 +632,13 @@ function drawStaticBoard(
     label.rotation = rect.rotation;
     container.addChild(label);
 
-    // Every tile is tap-to-inspect (short board codes mean the full name and
-    // details live in the detail sheet); the whole tile is the hit target.
-    container.eventMode = "static";
-    container.cursor = "pointer";
-    container.hitArea = new Rectangle(rect.x, rect.y, rect.width, rect.height);
-    container.on("pointertap", () => onTileTap(tile.position));
-
+    // Taps are hit-tested at the DOM level (see handleBoardTap) — every tile is
+    // tap-to-inspect there, so no per-tile Pixi event wiring is needed here.
     stage.addChild(container);
     tileContainers.set(tile.position, container);
   }
 
-  drawCenterEmblem(stage, size, onEmblemTap);
+  drawCenterEmblem(stage, size);
 }
 
 /**
@@ -635,15 +646,12 @@ function drawStaticBoard(
  * wordmark flanked by two dice and a rupee mark. Purely graphic/typographic
  * (no illustrated art), and scales with the board so it reads at any size.
  */
-function drawCenterEmblem(stage: Container, size: number, onEmblemTap: () => void) {
+function drawCenterEmblem(stage: Container, size: number) {
   const R = size * 0.155;
   const emblem = new Container();
   emblem.x = size / 2;
   emblem.y = size / 2;
-  emblem.eventMode = "static";
-  emblem.cursor = "pointer";
-  emblem.hitArea = new Circle(0, 0, R);
-  emblem.on("pointertap", onEmblemTap);
+  // The emblem tap (opens the event tables) is hit-tested at the DOM level too.
 
   const badge = new Graphics()
     .circle(0, 0, R)
