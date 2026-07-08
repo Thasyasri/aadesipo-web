@@ -64,12 +64,24 @@ export function useScrollReveal(dep: string) {
           }
         });
       },
-      { threshold: 0.1, rootMargin: "0px 0px -6% 0px" },
+      // threshold 0 = fire the instant any pixel enters, so tall elements and
+      // fast scrolls reveal reliably (no "sometimes it animates" gaps).
+      { threshold: 0, rootMargin: "0px 0px -8% 0px" },
     );
     els.forEach((e) => io.observe(e));
 
+    // Safety net: if the observer somehow hasn't fired for on-screen elements
+    // shortly after mount (edge cases / very short pages), reveal them anyway.
+    const safety = window.setTimeout(() => {
+      els.forEach((e) => {
+        const r = e.getBoundingClientRect();
+        if (r.top < window.innerHeight && r.bottom > 0) e.classList.add("in");
+      });
+    }, 900);
+
     return () => {
       io.disconnect();
+      window.clearTimeout(safety);
       root.classList.remove("reveal-ready");
       els.forEach((e) => {
         e.classList.remove("reveal", "in");

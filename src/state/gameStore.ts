@@ -271,6 +271,22 @@ export const AI_DISPLAY_NAMES: Readonly<Record<PersonalityId, string>> = {
 };
 
 /**
+ * A pool of distinct names so that when a personality repeats (e.g. four AIs
+ * means two gamblers), every opponent still gets a UNIQUE name — no more two
+ * "Ayush"es at the table. Starts with the per-personality preferred names.
+ */
+const AI_NAME_POOL: readonly string[] = [
+  "Ayush",
+  "Dev",
+  "Ria",
+  "Kiran",
+  "Meera",
+  "Sai",
+  "Priya",
+  "Arjun",
+];
+
+/**
  * AI difficulty maps to the engine's `skillLevel` (0-1) — how often the AI
  * takes its valuation's best answer vs. a plausible-but-worse one. Same rules
  * at every level (no cheating), just more or less decision noise.
@@ -289,11 +305,22 @@ export function buildAiOpponents(
   skillLevel: number = getAiDefaultSkillLevel(),
 ): PlayerSetup[] {
   const human: PlayerSetup = { id: "human", displayName: humanName };
-  const ais: PlayerSetup[] = aiPersonalityIds.map((id, i) => ({
-    id: `ai-${i}-${id}`,
-    displayName: AI_DISPLAY_NAMES[id],
-    ai: { personality: PERSONALITIES[id], skillLevel },
-  }));
+  // Keep each personality's preferred name for its first occurrence; if that
+  // name is already taken (a repeated personality), fall back to the next
+  // unused pool name so every opponent's name is unique.
+  const used = new Set<string>();
+  const ais: PlayerSetup[] = aiPersonalityIds.map((id, i) => {
+    let name = AI_DISPLAY_NAMES[id];
+    if (used.has(name)) {
+      name = AI_NAME_POOL.find((n) => !used.has(n)) ?? `Rival ${i + 1}`;
+    }
+    used.add(name);
+    return {
+      id: `ai-${i}-${id}`,
+      displayName: name,
+      ai: { personality: PERSONALITIES[id], skillLevel },
+    };
+  });
   return [human, ...ais];
 }
 

@@ -49,9 +49,10 @@ export const WALK_STEP_CAP = 12;
 // TUMBLE_MS ~700ms) rather than moving while the dice are still tumbling.
 export const WALK_START_DELAY_MS = 720;
 
-// Duration of one tile-to-tile hop. Also the game screen's per-tile estimate
-// for holding the landing sheet until the walk is done, so the coin isn't hidden.
-const HOP_MS = 200;
+// Duration of one tile-to-tile hop. Deliberately slow so a player can watch —
+// and count — the coin step across each tile. Also the game screen's per-tile
+// estimate for holding the landing sheet until the walk is done.
+const HOP_MS = 500;
 export const APPROX_MS_PER_TILE = HOP_MS;
 
 // Premium navy board (D3a) — matches the app's --color-bg-* / text tokens so
