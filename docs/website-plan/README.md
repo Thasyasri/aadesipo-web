@@ -44,12 +44,15 @@ batch** (dynamic taxes, auction-opens-at-price, per-seat AI difficulty, scrollab
 
 Locked decisions that shape everything downstream. Date: 2026-07-07.
 
-| #       | Decision         | Choice                                             | Why                                                                                                                                                                                                                                                                                                                                                 |
-| ------- | ---------------- | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **D1**  | Accounts & auth  | **Guest-first + optional accounts**                | Preserve the app's biggest strength — zero-friction instant play — while adding optional Supabase Auth (email + Google) so players _can_ save stats, appear on leaderboards, and sync across devices. No forced login.                                                                                                                              |
-| **D2**  | Phase-1 scope    | **Public site shell first**                        | Build the polished, presentable wrapper (landing, play, about, gallery, nav/footer, 404, design system) around the game that already works, before deepening the player platform. Fastest path to a complete, high-quality result.                                                                                                                  |
-| **D3**  | Visual direction | **Bolder redesign**                                | Establish a fresh, more premium visual identity (new palette, typography, mood, motion) rather than only evolving the current desi/marigold theme.                                                                                                                                                                                                  |
-| **D3a** | Design language  | **"Contemporary Indian Premium"** (user-specified) | Monopoly GO (playful) × Apple (minimal) × Tanishq (premium gold) × CRED (dark luxury) × Swiggy/Zomato (warm Indian). Navy canvas `#121726`, surface `#20273A`, gold `#E6B54A`, cream `#F5EBD7`, coral (energy) `#EF6A5B`, mint (success) `#72C7A6`. Tiny Indian touches, not heavy motifs. Fully specified by the user — see `03-design-system.md`. |
+| #       | Decision           | Choice                                              | Why                                                                                                                                                                                                                                                                                                                                                 |
+| ------- | ------------------ | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **D1**  | Accounts & auth    | **Guest-first + optional accounts**                 | Preserve the app's biggest strength — zero-friction instant play — while adding optional Supabase Auth (email + Google) so players _can_ save stats, appear on leaderboards, and sync across devices. No forced login.                                                                                                                              |
+| **D2**  | Phase-1 scope      | **Public site shell first**                         | Build the polished, presentable wrapper (landing, play, about, gallery, nav/footer, 404, design system) around the game that already works, before deepening the player platform. Fastest path to a complete, high-quality result.                                                                                                                  |
+| **D3**  | Visual direction   | **Bolder redesign**                                 | Establish a fresh, more premium visual identity (new palette, typography, mood, motion) rather than only evolving the current desi/marigold theme.                                                                                                                                                                                                  |
+| **D3a** | Design language    | **"Contemporary Indian Premium"** (user-specified)  | Monopoly GO (playful) × Apple (minimal) × Tanishq (premium gold) × CRED (dark luxury) × Swiggy/Zomato (warm Indian). Navy canvas `#121726`, surface `#20273A`, gold `#E6B54A`, cream `#F5EBD7`, coral (energy) `#EF6A5B`, mint (success) `#72C7A6`. Tiny Indian touches, not heavy motifs. Fully specified by the user — see `03-design-system.md`. |
+| **D4**  | Leaderboard trust  | **Online-validated games only**                     | Local vs-AI / pass-and-play results are client-computed and trivially spoofable; online games are already server-validated (`validate-action` replays via the engine). Public boards rank only online games; local play feeds private stats. Honest and cheat-resistant. See `08-phase-2-player-platform.md`.                                       |
+| **D5**  | Sign-in method     | **Email + password (with reset) + existing Google** | Give players a familiar, provider-independent account option alongside Google. Guests link either in place (Supabase preserves `user.id`), so history carries over with no migration.                                                                                                                                                               |
+| **D6**  | Phase-2 sequencing | **Sub-phases 2a → 2b → 2c**                         | Identity → stats/profile/dashboard → leaderboards. Each ships independently and is usable on its own, so we course-correct between them.                                                                                                                                                                                                            |
 
 Future decisions get appended here as we make them.
 
@@ -71,8 +74,11 @@ Future decisions get appended here as we make them.
   ✅ Landing · Play · About · **Rules / How to Play** · Gallery · global nav + footer ·
   404 · design system (light+dark, Fraunces+Manrope, softened palette + ambient aurora ·
   micro-interactions) · SEO & social-sharing · game reskinned to match.
-- **Phase 2 — Player platform**
-  Optional accounts (Supabase Auth), expanded Profile, Dashboard, Leaderboards, stats.
+- **Phase 2 — Player platform** (**planned** — see `08-phase-2-player-platform.md`)
+  Additive to guest-first (D1). Three sub-phases:
+  - **2a Durable identity** — email+password (+reset) alongside Google; guest→account linking (keeps `user.id`); expanded Profile; header Sign-in.
+  - **2b Stats & your play** — persist a `game_result` at game-over (local-first + synced when signed in); personal stats; real Profile + Dashboard.
+  - **2c Leaderboards** — online-validated rankings only (D4), opt-in and privacy-aware.
 - **Phase 3 — Community & scale**
   Achievements, news/updates, tournaments, messaging, i18n, admin — only as needed.
 
@@ -90,6 +96,7 @@ Future decisions get appended here as we make them.
 | `05-component-library.md`        | Reusable components + states                                     | pending                                  |
 | `06-technical-architecture.md`   | Routing, state, auth, data, perf, SEO, deploy                    | pending                                  |
 | `07-accessibility.md`            | Keyboard, focus, semantics, WCAG, contrast                       | pending                                  |
+| `08-phase-2-player-platform.md`  | Phase 2 plan: identity, stats, profile/dashboard, leaderboards   | **planned** (design sketch, pre-build)   |
 
 Maps onto the 14-section brief: structure → IA → wireframes → design system →
 branding → UX → motion → media → components → responsive → technical → perf/a11y →
