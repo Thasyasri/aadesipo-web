@@ -4,6 +4,7 @@ import { BOARD, GAME_MODES, PERSONALITIES, type PersonalityId } from "@aadesipo/
 import { formatRupees } from "@/utils/currency";
 import { tileCode } from "@/utils/tileCode";
 import { placeIcons, featureIcons, PlayIcon, ArrowUpIcon, LotusIcon } from "./icons";
+import { useDocumentMeta } from "./useDocumentMeta";
 
 /* ---- live-from-engine derivations (so the page can never drift) ---------- */
 
@@ -165,6 +166,10 @@ function Ornament() {
 /* ---- the page ------------------------------------------------------------ */
 
 export function Landing() {
+  useDocumentMeta(
+    "AadesiPo — The Telugu property game",
+    "Buy Charminar, build on Jubilee Hills, and bankrupt your friends. AadesiPo is a property game for the Telugu states — play vs AI, pass-and-play, or online. No sign-up, works offline.",
+  );
   return (
     <>
       {/* HERO */}

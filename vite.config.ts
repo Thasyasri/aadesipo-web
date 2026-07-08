@@ -35,14 +35,16 @@ export default defineConfig({
       includeAssets: ["favicon.svg", "apple-touch-icon.png"],
       manifest: {
         id: "/",
-        name: "AadesiPo",
+        name: "AadesiPo — The Telugu property game",
         short_name: "AadesiPo",
-        description: "A desi-flavored, Monopoly-inspired mobile-first web game.",
-        theme_color: "#0F1222",
-        background_color: "#0F1222",
+        description:
+          "A property game for the Telugu states — buy, build, and bankrupt your friends. Play vs AI, pass-and-play, or online. No sign-up, works offline.",
+        theme_color: "#121726",
+        background_color: "#121726",
         display: "standalone",
         orientation: "portrait",
-        start_url: "/",
+        // Installed app opens straight to the game setup, not the marketing page.
+        start_url: "/play",
         scope: "/",
         icons: [
           { src: "icon-192.png", sizes: "192x192", type: "image/png" },

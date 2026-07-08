@@ -1,5 +1,6 @@
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Link } from "react-router";
+import { useDocumentMeta } from "./useDocumentMeta";
 import { BOARD, GAME_MODES } from "@aadesipo/engine";
 import { featureIcons, PlayIcon, LotusIcon } from "./icons";
 
@@ -68,13 +69,10 @@ const VALUES: readonly Value[] = [
 ];
 
 export function About() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = "About — AadesiPo";
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  useDocumentMeta(
+    "About — AadesiPo",
+    "What AadesiPo is and why we made it — a property game for the Telugu states, built skill-first, guest-first, and honest by design.",
+  );
 
   return (
     <>

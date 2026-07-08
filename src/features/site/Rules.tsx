@@ -1,5 +1,6 @@
-import { useEffect, type ReactNode } from "react";
+import { type ReactNode } from "react";
 import { Link } from "react-router";
+import { useDocumentMeta } from "./useDocumentMeta";
 import {
   BOARD,
   GAME_MODES,
@@ -441,13 +442,10 @@ const SEGMENTS: readonly Segment[] = [
 ];
 
 export function Rules() {
-  useEffect(() => {
-    const prev = document.title;
-    document.title = "How to play — AadesiPo";
-    return () => {
-      document.title = prev;
-    };
-  }, []);
+  useDocumentMeta(
+    "How to play — AadesiPo",
+    "The full AadesiPo rulebook — objective, buying, rent, auctions, jail, the Chance & Sarpanch event tables, and game modes, all read straight from the game engine.",
+  );
 
   const toc = (
     <ol>
