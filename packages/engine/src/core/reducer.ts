@@ -21,6 +21,7 @@ import {
   movePlayer,
   ownerOf,
   ownershipAt,
+  priceOf,
   propertiesOwnedBy,
   payFromBank,
   payToBank,
@@ -591,7 +592,13 @@ function handleDeclineProperty(state: GameState, playerId: string, position: num
     return accept({ ...state, turnPhase: postTileResolutionPhase(state) }, [declined]);
   }
 
-  const result = startAuction(state, position, playerId);
+  // A declined property is auctioned to the table opening at its LIST PRICE:
+  // you either meet what you'd have paid to buy it, or it stays unowned. (A
+  // player-sale auction, by contrast, opens at the mortgage value — see
+  // handleSellProperty.)
+  const tile = getTile(position);
+  const reserve = isOwnable(tile) ? priceOf(tile) : 0;
+  const result = startAuction(state, position, playerId, { reserve });
   return accept(result.state, [declined, ...result.events]);
 }
 

@@ -194,7 +194,17 @@ function decideAuctionAction(
   // Respect the reserve on a sale — the first valid bid can't be below it.
   const nextBid = Math.max(auction.minBid, auction.highestBid + 10);
 
-  const ceiling = maxAuctionBid(state, playerId, auction.position, config.personality);
+  let ceiling = maxAuctionBid(state, playerId, auction.position, config.personality);
+  // A bank auction of a DECLINED property now opens at the tile's list price.
+  // Winning it there is the same economic choice as buying it on landing, so an
+  // AI that positively values the tile should be willing to meet the opening —
+  // otherwise the willingness ceiling (often below list price for a lone tile)
+  // makes every declined tile void, and games never progress. Only for bank
+  // auctions (sellerId === null); a player sale keeps its conservative ceiling.
+  if (auction.sellerId === null && auction.minBid > 0) {
+    const value = propertyValue(state, playerId, auction.position, config.personality);
+    if (value > 0) ceiling = Math.max(ceiling, auction.minBid);
+  }
   const draw = nextFloat(rng);
   const modelSaysBid = nextBid <= ceiling && player.cash >= nextBid;
   const takesModelAnswer = draw.value < config.skillLevel;

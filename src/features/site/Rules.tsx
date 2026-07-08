@@ -203,8 +203,9 @@ const SEGMENTS: readonly Segment[] = [
     body: (
       <>
         <p>
-          <b>Declined-property auction:</b> bidding opens to all players; the highest bid wins and
-          pays the <b>bank</b>. No bids → the tile stays unowned.
+          <b>Declined-property auction:</b> bidding opens at the tile’s <b>list price</b> and rises
+          from there — every other player gets a shot, the highest bid wins and pays the <b>bank</b>
+          . If nobody will meet the price, the tile stays unowned.
         </p>
         <p>
           <b>Sell to auction (your own property):</b> on your turn — or while raising funds — you

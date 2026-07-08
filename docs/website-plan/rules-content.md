@@ -53,7 +53,7 @@ Currency note: the engine stores amounts in units of ₹1,000. The UI shows them
 
 ## 6. Auctions
 
-- **Declined-property auction:** bidding opens to all players; highest bid wins and pays the **bank**. No bids → the tile stays unowned.
+- **Declined-property auction:** bidding opens at the tile's **list price** and rises from there; the highest bid wins and pays the **bank**. If nobody will meet the price, the tile stays unowned.
 - **Sell to auction (your property):** on your turn (or while raising funds) you can auction a property you own. Proceeds go to **you**; the **reserve = its mortgage value**; if nobody bids you keep it. Only building-free, unmortgaged property can be listed, and the seller can't bid.
 
 ## 7. Rent

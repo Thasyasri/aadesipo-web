@@ -64,7 +64,8 @@ function chooseAction(state: GameState, botRng: RngState): { action: Action; nex
     const auction = state.pendingAuction!;
     const draw = nextFloat(botRng);
     const bidder = state.players.find((p) => p.id === auction.turnBidderId)!;
-    const nextBid = auction.highestBid + 10;
+    // Respect the reserve (a declined property now opens at its list price).
+    const nextBid = Math.max(auction.minBid, auction.highestBid + 10);
     const affordableMargin = bidder.cash - nextBid;
     const wantsToBid = affordableMargin > 50 && draw.value < 0.5;
     return {

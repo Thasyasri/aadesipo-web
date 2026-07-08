@@ -884,7 +884,14 @@ describe("auctions", () => {
     expect(decline.state.turnPhase).toBe("awaiting-auction");
     const firstBidder = decline.state.pendingAuction!.turnBidderId;
 
-    const bid = applyAction(decline.state, { type: "PlaceBid", playerId: firstBidder, amount: 50 });
+    // A declined property's auction opens at its list price, so the first valid
+    // bid is the reserve (minBid), not an arbitrary low amount.
+    const openingBid = decline.state.pendingAuction!.minBid;
+    const bid = applyAction(decline.state, {
+      type: "PlaceBid",
+      playerId: firstBidder,
+      amount: openingBid,
+    });
     expect(bid.ok).toBe(true);
     if (!bid.ok) return;
 
