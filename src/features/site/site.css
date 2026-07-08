@@ -352,6 +352,21 @@
   flex: none;
   filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.3));
 }
+/* Signed-in avatar chip in the nav (initial on a gold coin). */
+.lp .nav-avatar {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: linear-gradient(160deg, var(--gold), var(--gold-press));
+  color: #1a1200;
+  font-family: var(--serif);
+  font-weight: 800;
+  font-size: 0.95rem;
+  flex: none;
+  box-shadow: 0 4px 12px rgba(230, 181, 74, 0.3);
+}
 .lp .navlinks {
   display: flex;
   gap: 1.4rem;

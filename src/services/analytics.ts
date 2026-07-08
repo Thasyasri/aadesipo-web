@@ -53,6 +53,9 @@ export const analyticsEvents = {
   onlineRoomCreated: () => client?.capture("online_room_created"),
   onlineRoomJoined: () => client?.capture("online_room_joined"),
   turnNotificationsEnabled: () => client?.capture("turn_notifications_enabled"),
+  auth: (event: "sign_in" | "sign_up", method: "email" | "google") => {
+    client?.capture(event, { method });
+  },
 };
 
 /**

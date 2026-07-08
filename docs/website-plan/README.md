@@ -63,7 +63,7 @@ Future decisions get appended here as we make them.
 - **Stack:** React 19 + TypeScript, Vite, Tailwind v4, PixiJS board, Zustand, React Router, Dexie (IndexedDB), Supabase (edge functions) for online rooms, PWA (service worker), PostHog analytics, Sentry.
 - **Rules engine:** `packages/engine` — pure, framework-free, 132 tests. The game logic is solid and stays as-is.
 - **Routes (now):** `/` (Landing), `/play` (game setup + resume list), `/rules`, `/about`, `/profile`, `/settings`, `/game/:id`, `/room/:roomId`, `/join/:roomCode`, `/online/:roomId`, `*` (404), `/gallery` (dev-only). The old game-setup home moved from `/` to `/play`.
-- **Auth today:** lightweight Supabase sessions used only for online rooms — **no email/password/registration yet**.
+- **Auth (as of Phase 2a):** guest-first anonymous sessions, upgradable to a durable account via **email+password (with reset)** or **Google** — linked in place so `user.id` (and history) is preserved. `/login` + `/reset` screens; header Sign-in / avatar.
 - **Theming:** dark + light, theme-aware (premium palette). PWA installable.
 
 ---
@@ -76,7 +76,7 @@ Future decisions get appended here as we make them.
   micro-interactions) · SEO & social-sharing · game reskinned to match.
 - **Phase 2 — Player platform** (**planned** — see `08-phase-2-player-platform.md`)
   Additive to guest-first (D1). Three sub-phases:
-  - **2a Durable identity** — email+password (+reset) alongside Google; guest→account linking (keeps `user.id`); expanded Profile; header Sign-in.
+  - **2a Durable identity** (**built**) — email+password (+reset) alongside Google; guest→account linking (keeps `user.id`); expanded Profile; header Sign-in. Routes `/login`, `/reset`.
   - **2b Stats & your play** — persist a `game_result` at game-over (local-first + synced when signed in); personal stats; real Profile + Dashboard.
   - **2c Leaderboards** — online-validated rankings only (D4), opt-in and privacy-aware.
 - **Phase 3 — Community & scale**

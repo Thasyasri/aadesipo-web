@@ -12,6 +12,8 @@ import { Gallery } from "@/features/site/Gallery";
 import { NotFound } from "@/features/site/NotFound";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { ProfileScreen } from "@/features/profile/ProfileScreen";
+import { LoginScreen } from "@/features/auth/LoginScreen";
+import { ResetScreen } from "@/features/auth/ResetScreen";
 import { SettingsScreen } from "@/features/settings/SettingsScreen";
 import { LobbyScreen } from "@/features/lobby/LobbyScreen";
 import { JoinRoomScreen } from "@/features/lobby/JoinRoomScreen";
@@ -54,6 +56,8 @@ export default function App() {
                 <Route path="gallery" element={<Gallery />} />
                 <Route path="play" element={<HomeScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />
+                <Route path="login" element={<LoginScreen />} />
+                <Route path="reset" element={<ResetScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />
                 <Route path="*" element={<NotFound />} />
               </Route>

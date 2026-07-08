@@ -1,5 +1,6 @@
 import { Link, NavLink } from "react-router";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useSession } from "@/state/session";
 
 const linkClass = ({ isActive }: { isActive: boolean }) => (isActive ? "active" : undefined);
 
@@ -10,6 +11,10 @@ const linkClass = ({ isActive }: { isActive: boolean }) => (isActive ? "active" 
  * duplicate it are gone.
  */
 export function SiteHeader() {
+  const { status, profile } = useSession();
+  const authed = status === "authenticated";
+  const initial = (profile?.displayName || "P").charAt(0).toUpperCase();
+
   return (
     <nav className="site-nav">
       <div className="wrap row">
@@ -32,15 +37,21 @@ export function SiteHeader() {
           <NavLink to="/gallery" className={linkClass}>
             Gallery
           </NavLink>
-          <NavLink to="/profile" className={linkClass}>
-            Profile
-          </NavLink>
           <NavLink to="/settings" className={linkClass}>
             Settings
           </NavLink>
         </div>
         <div className="nav-right">
           <ThemeToggle />
+          {authed ? (
+            <Link className="nav-avatar" to="/profile" aria-label="Your profile" title="Profile">
+              {initial}
+            </Link>
+          ) : (
+            <Link className="btn btn-ghost btn-sm" to="/login">
+              Sign in
+            </Link>
+          )}
           <Link className="btn btn-gold btn-sm" to="/play">
             Play
           </Link>
