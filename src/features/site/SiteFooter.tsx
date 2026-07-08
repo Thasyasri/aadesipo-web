@@ -15,6 +15,7 @@ export function SiteFooter() {
             <Link to="/">Home</Link>
             <Link to="/play">Play</Link>
             <Link to="/rules">Rules</Link>
+            <Link to="/about">About</Link>
             <Link to="/profile">Profile</Link>
             <Link to="/settings">Settings</Link>
           </div>

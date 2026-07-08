@@ -1012,11 +1012,13 @@
   }
 }
 
-/* ---------- rules / how-to-play page ---------- */
-.lp .rules-hero {
+/* ---------- content-page hero (rules, about) ---------- */
+.lp .rules-hero,
+.lp .about-hero {
   padding-block: clamp(2rem, 5vw, 3.2rem) 0;
 }
-.lp .rules-hero h1 {
+.lp .rules-hero h1,
+.lp .about-hero h1 {
   font-family: var(--serif);
   font-size: var(--s3);
   line-height: 1.05;
@@ -1024,7 +1026,8 @@
   margin: 0.5rem 0 0.6rem;
   font-weight: 700;
 }
-.lp .rules-hero p {
+.lp .rules-hero p,
+.lp .about-hero p {
   color: var(--ink-muted);
   max-width: 62ch;
   font-size: var(--s1);
