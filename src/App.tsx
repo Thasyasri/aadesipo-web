@@ -6,6 +6,7 @@ import { RootLayout } from "@/routes/RootLayout";
 import { SiteLayout } from "@/features/site/SiteLayout";
 import { GameLayout } from "@/features/site/GameLayout";
 import { Landing } from "@/features/site/Landing";
+import { Rules } from "@/features/site/Rules";
 import { NotFound } from "@/features/site/NotFound";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { ProfileScreen } from "@/features/profile/ProfileScreen";
@@ -45,6 +46,7 @@ export default function App() {
                   with the app tokens remapped so these adopt the premium look. */}
               <Route element={<SiteLayout />}>
                 <Route index element={<Landing />} />
+                <Route path="rules" element={<Rules />} />
                 <Route path="play" element={<HomeScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />

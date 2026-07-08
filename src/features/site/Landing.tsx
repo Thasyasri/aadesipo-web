@@ -185,9 +185,9 @@ export function Landing() {
                 {PlayIcon}
                 Play free
               </Link>
-              <a className="btn btn-ghost" href="#rules">
+              <Link className="btn btn-ghost" to="/rules">
                 How to play
-              </a>
+              </Link>
             </div>
             <div className="assure">
               Free
@@ -386,7 +386,7 @@ export function Landing() {
             ))}
           </div>
           <p className="rules-point">
-            New to the game? <a href="#rules">Read the full rulebook →</a>
+            New to the game? <Link to="/rules">Read the full rulebook →</Link>
           </p>
         </div>
       </section>

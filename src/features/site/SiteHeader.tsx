@@ -20,6 +20,9 @@ export function SiteHeader() {
           </span>
         </Link>
         <div className="navlinks">
+          <NavLink to="/rules" className={linkClass}>
+            Rules
+          </NavLink>
           <NavLink to="/profile" className={linkClass}>
             Profile
           </NavLink>
