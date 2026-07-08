@@ -111,20 +111,37 @@
   isolation: isolate; /* keep the ambient ::before behind this page's content */
 }
 
-/* Ambient light — soft gold/coral/mint glows that gently drift, giving the
-   page a living, premium atmosphere. Marketing pages only (not the game bar). */
-.lp:not(.lp-bar)::before {
+/* Ambient aurora — a rich, multi-hue colour field (gold · coral · mint · lav ·
+   sky) that slowly drifts, giving every marketing page a living, premium
+   atmosphere. TWO layers (::before + ::after) counter-drift at different speeds
+   for real depth; alphas stay modest so it reads rich, never glary, and the
+   slow transforms keep scrolling perfectly smooth. Game bar excluded. */
+.lp:not(.lp-bar)::before,
+.lp:not(.lp-bar)::after {
   content: "";
   position: fixed;
-  inset: -25%;
+  inset: -30%;
   z-index: -1;
   pointer-events: none;
+  will-change: transform;
+}
+/* Layer 1 — the primary warm aurora (gold + coral anchor the top corners). */
+.lp:not(.lp-bar)::before {
   background:
-    radial-gradient(38% 32% at 82% 6%, var(--glow-soft), transparent 60%),
-    radial-gradient(34% 30% at 4% 2%, rgba(239, 106, 91, 0.12), transparent 60%),
-    radial-gradient(42% 34% at 50% 106%, rgba(114, 199, 166, 0.09), transparent 62%),
-    radial-gradient(30% 26% at 24% 70%, rgba(169, 145, 247, 0.07), transparent 62%);
+    radial-gradient(38% 34% at 82% 4%, var(--au-gold), transparent 60%),
+    radial-gradient(34% 32% at 4% 6%, var(--au-coral), transparent 60%),
+    radial-gradient(46% 38% at 50% 108%, var(--au-mint), transparent 62%),
+    radial-gradient(30% 28% at 24% 72%, var(--au-lav), transparent 62%);
   animation: lp-drift 26s ease-in-out infinite alternate;
+}
+/* Layer 2 — a cooler counter-drifting wash (sky + mint + a gold echo) that
+   makes the colour feel like it's breathing rather than sitting still. */
+.lp:not(.lp-bar)::after {
+  background:
+    radial-gradient(34% 30% at 94% 58%, var(--au-sky), transparent 62%),
+    radial-gradient(30% 26% at 12% 40%, var(--au-mint), transparent 62%),
+    radial-gradient(28% 24% at 66% 30%, var(--au-gold), transparent 64%);
+  animation: lp-drift2 34s ease-in-out infinite alternate;
 }
 @keyframes lp-drift {
   from {
@@ -134,9 +151,30 @@
     transform: translate3d(-2.5%, 1.8%, 0) scale(1.07);
   }
 }
-/* Keep the light theme calm — dim the ambient glow so it never reads as bright. */
-[data-theme="light"] .lp:not(.lp-bar)::before {
-  opacity: 0.5;
+@keyframes lp-drift2 {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.04);
+  }
+  to {
+    transform: translate3d(3%, -2.2%, 0) scale(1);
+  }
+}
+/* Aurora hue tokens — dark: saturated jewel tints on navy. */
+:root {
+  --au-gold: rgba(230, 181, 74, 0.2);
+  --au-coral: rgba(239, 106, 91, 0.16);
+  --au-mint: rgba(114, 199, 166, 0.14);
+  --au-lav: rgba(169, 145, 247, 0.12);
+  --au-sky: rgba(122, 182, 232, 0.12);
+}
+/* Light: the same five hues, softened & slightly warmed so the field stays
+   rich and colourful on warm paper without ever tipping into "bright". */
+[data-theme="light"] {
+  --au-gold: rgba(214, 158, 54, 0.22);
+  --au-coral: rgba(205, 97, 83, 0.14);
+  --au-mint: rgba(64, 148, 122, 0.13);
+  --au-lav: rgba(150, 122, 235, 0.1);
+  --au-sky: rgba(96, 156, 214, 0.12);
 }
 
 /* Header-only chrome for gameplay routes: the premium bar sits above the
@@ -821,6 +859,81 @@
   margin-top: 0.2rem;
 }
 
+/* why this is ours — a warmly-tinted panel of Telugu touchstones (filter
+   coffee, RTC depots, first-day-first-show). Rich colour, gentle contrast. */
+.lp .ours {
+  border-radius: 26px;
+  padding: clamp(1.6rem, 4vw, 2.8rem);
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(90% 150% at 0% 0%, rgba(230, 181, 74, 0.16), transparent 55%),
+    radial-gradient(90% 150% at 100% 100%, rgba(239, 106, 91, 0.14), transparent 55%),
+    radial-gradient(80% 130% at 100% 0%, rgba(114, 199, 166, 0.12), transparent 55%), var(--surface);
+  border: 1px solid var(--hair);
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 var(--card-hi);
+}
+.lp .ours-head {
+  max-width: 58ch;
+  margin-bottom: 1.7rem;
+}
+.lp .ours-head h2 {
+  font-family: var(--serif);
+  font-size: var(--s2);
+  font-weight: 700;
+  margin: 0.4rem 0 0.55rem;
+}
+.lp .ours-head p {
+  color: var(--ink-muted);
+}
+.lp .touchstones {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.2rem;
+}
+@media (max-width: 760px) {
+  .lp .touchstones {
+    grid-template-columns: 1fr;
+    gap: 1.4rem;
+  }
+}
+.lp .touch {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  transition: transform 0.22s ease;
+}
+.lp .touch .em {
+  font-size: 1.7rem;
+  width: 52px;
+  height: 52px;
+  border-radius: 15px;
+  display: grid;
+  place-items: center;
+  background: rgba(230, 181, 74, 0.1);
+  border: 1px solid var(--hair);
+  margin-bottom: 0.2rem;
+  transition:
+    transform 0.25s ease,
+    background 0.25s ease;
+}
+.lp .touch:hover .em {
+  transform: translateY(-3px) rotate(-4deg);
+  background: rgba(230, 181, 74, 0.16);
+}
+.lp .touch h3 {
+  font-family: var(--serif);
+  font-size: 1.12rem;
+  font-weight: 700;
+}
+.lp .touch p {
+  color: var(--ink-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
 /* modes */
 .lp .modes {
   display: grid;
@@ -1363,7 +1476,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .lp:not(.lp-bar)::before {
+  .lp:not(.lp-bar)::before,
+  .lp:not(.lp-bar)::after {
     animation: none;
   }
   .lp .reveal {

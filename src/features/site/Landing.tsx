@@ -52,18 +52,20 @@ const MODE_COPY: Record<string, { label: string; pill: string; desc: string }> =
 // here until its card copy is written — the section can't silently fall stale.
 const RIVAL_COPY: Record<
   PersonalityId,
-  { emoji: string; tag: string; title: string; quote: ReactNode }
+  { emoji: string; tag: string; title: string; line: ReactNode; quote: ReactNode }
 > = {
   gambler: {
     emoji: "🎲",
     tag: "Rowdy",
     title: "All in, always",
+    line: "Bets the farm on a hard six — thrilling to watch, painful to bank against.",
     quote: "“Fortune favours the reckless, anna.”",
   },
   troll: {
     emoji: "😈",
     tag: "Konte",
     title: "Chaos merchant",
+    line: "Buys the tile you need just to watch you squirm. Pure mass-masala mischief.",
     quote: (
       <>
         “I didn’t want it. I wanted <em>you</em> to lose it.”
@@ -74,6 +76,7 @@ const RIVAL_COPY: Record<
     emoji: "💰",
     tag: "Pisinari",
     title: "Never overpays",
+    line: "Counts every rupee twice and waits out auctions till you blink first.",
     quote: "“Patience is the cheapest asset.”",
   },
 };
@@ -85,8 +88,8 @@ const FEATURES: readonly { icon: keyof typeof featureIcons; title: string; body:
     title: "Guest-first",
     body: (
       <>
-        One tap and you’re playing. <b>No account, ever</b> — sign in later only if you want to save
-        stats.
+        One tap and you’re in — quicker than a ticket at the counter. <b>No account, ever</b>; sign
+        in later only if you want to save stats.
       </>
     ),
   },
@@ -115,10 +118,30 @@ const FEATURES: readonly { icon: keyof typeof featureIcons; title: string; body:
     title: "Play your way",
     body: (
       <>
-        Smart AI, <b>pass-and-play</b> on one phone, or an online room with friends. Flip house
-        rules to taste.
+        Smart AI, <b>pass-and-play</b> on one phone passed around like the family remote, or an
+        online room with friends. Flip house rules to taste.
       </>
     ),
+  },
+];
+
+/* Little touchstones that make the board feel like home — kept state-neutral
+   (true across both Telugu states) and free of any festival that leans one way. */
+const TOUCHSTONES: readonly { emoji: string; title: string; body: string }[] = [
+  {
+    emoji: "☕",
+    title: "Filter-coffee pace",
+    body: "Built for the second cup — long enough to scheme, done before the kaapi goes cold.",
+  },
+  {
+    emoji: "🚌",
+    title: "RTC-depot stops",
+    body: "Transit tiles are bus depots, not railroads — the very ones you’ve sprinted for at the last second.",
+  },
+  {
+    emoji: "🎬",
+    title: "First-day-first-show",
+    body: "Win big and it’s your benefit show; go bankrupt and it’s just interval. One more, anna?",
   },
 ];
 
@@ -276,6 +299,33 @@ export function Landing() {
         </div>
       </section>
 
+      {/* WHY THIS IS OURS */}
+      <section id="ours">
+        <div className="wrap">
+          <div className="ours">
+            <div className="ours-head">
+              <span className="eyebrow">Made in the Telugu states</span>
+              <h2>Why this one feels like home</h2>
+              <p className="muted">
+                Not a skin over some foreign board — it’s built from the small things two Telugu
+                states share, wherever you grew up.
+              </p>
+            </div>
+            <div className="touchstones">
+              {TOUCHSTONES.map((t) => (
+                <div className="touch" key={t.title}>
+                  <div className="em" aria-hidden="true">
+                    {t.emoji}
+                  </div>
+                  <h3>{t.title}</h3>
+                  <p>{t.body}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
       <Ornament />
 
       {/* MEET YOUR RIVALS */}
@@ -297,6 +347,7 @@ export function Landing() {
                   <div className="av">{r.emoji}</div>
                   <div className="tag">{r.tag}</div>
                   <h3>{r.title}</h3>
+                  <p>{r.line}</p>
                   <p className="quote">{r.quote}</p>
                 </div>
               );
