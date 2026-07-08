@@ -8,8 +8,10 @@
 
 @theme {
   /* Typography */
-  --font-display: "Baloo 2", system-ui, sans-serif;
-  --font-body: "Inter", system-ui, sans-serif;
+  /* Contemporary Indian Premium (D3a): characterful serif display + clean
+     humanist body, matching the marketing site so the whole app is one voice. */
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Manrope", system-ui, -apple-system, sans-serif;
 
   --text-display-xl: 2.5rem; /* 40px */
   --text-display-xl--line-height: 3rem; /* 48px */

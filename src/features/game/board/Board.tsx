@@ -158,7 +158,7 @@ function makeTileLabelStyle(cell: number): TextStyle {
   return new TextStyle({
     fill: TEXT_PRIMARY,
     fontSize,
-    fontFamily: "Inter, system-ui, sans-serif",
+    fontFamily: "Manrope, system-ui, sans-serif",
     fontWeight: "600",
     wordWrap: true,
     // Break long single words too (Kacheguda, Rajmundry…) so a name wraps
@@ -175,7 +175,7 @@ function makePriceLabelStyle(cell: number): TextStyle {
   return new TextStyle({
     fill: TEXT_MUTED,
     fontSize: Math.round(Math.max(7, Math.min(cell * 0.2, 11))),
-    fontFamily: "Inter, system-ui, sans-serif",
+    fontFamily: "Manrope, system-ui, sans-serif",
     fontWeight: "700",
     align: "center",
   });
@@ -672,7 +672,7 @@ function drawCenterEmblem(stage: Container, size: number) {
     style: new TextStyle({
       fill: EMBLEM_MARIGOLD,
       fontSize: R * 0.32,
-      fontFamily: "Baloo 2, system-ui, sans-serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontWeight: "800",
     }),
   });
@@ -689,7 +689,7 @@ function drawCenterEmblem(stage: Container, size: number) {
     style: new TextStyle({
       fill: EMBLEM_CORAL,
       fontSize: R * 0.48,
-      fontFamily: "Baloo 2, system-ui, sans-serif",
+      fontFamily: "Fraunces, Georgia, serif",
       fontWeight: "800",
     }),
   });
@@ -745,7 +745,7 @@ function createTileOverlay(
     style: new TextStyle({
       fill: BADGE_TEXT,
       fontSize: cell * 0.2,
-      fontFamily: "Inter, system-ui, sans-serif",
+      fontFamily: "Manrope, system-ui, sans-serif",
       fontWeight: "800",
     }),
   });

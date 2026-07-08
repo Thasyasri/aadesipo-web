@@ -38,9 +38,10 @@
   --p-olive: #a7bf5d;
   --p-sand: #d8b17d;
   --p-slate: #7c8ca8;
-  /* type — prod faces later; system stacks give the premium serif look now */
-  --serif: Georgia, "Times New Roman", serif;
-  --sans: "Segoe UI", system-ui, -apple-system, Roboto, sans-serif;
+  /* type — Fraunces (display serif) + Manrope (body), loaded in index.html;
+     Georgia / system are the fallbacks while the webfonts load. */
+  --serif: "Fraunces", Georgia, "Times New Roman", serif;
+  --sans: "Manrope", system-ui, -apple-system, Roboto, sans-serif;
   --s0: clamp(0.95rem, 0.9rem + 0.2vw, 1.05rem);
   --s1: clamp(1.1rem, 1rem + 0.5vw, 1.35rem);
   --s2: clamp(1.5rem, 1.2rem + 1.3vw, 2.2rem);
@@ -81,8 +82,8 @@
   --color-brand-primary-strong: var(--gold-ink);
   --color-brand-secondary: var(--coral);
   --color-brand-secondary-strong: var(--coral);
-  --font-display: var(--serif);
-  --font-body: var(--sans);
+  /* --font-display / --font-body are already the premium faces globally
+     (index.css), so no remap is needed here. */
 
   min-height: 100vh;
   background:
