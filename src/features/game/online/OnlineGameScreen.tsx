@@ -13,7 +13,7 @@ import { PropertiesSheet } from "../sheets/PropertiesSheet";
 import { TileDetailSheet } from "../sheets/TileDetailSheet";
 import { EventTablesSheet } from "../sheets/EventTablesSheet";
 import { TradeSheet } from "../sheets/TradeSheet";
-import { ActivitySounds } from "../GameLog";
+import { ActivitySounds, RecentActivity } from "../GameLog";
 import { ActivitySheet } from "../sheets/ActivitySheet";
 import { LastRoll } from "../dice/LastRoll";
 import { VictoryDialog } from "../VictoryDialog";
@@ -173,6 +173,12 @@ export function OnlineGameScreen() {
           <PlayerStrip game={game} players={displaySetups} events={recentEvents} />
 
           <LastRoll events={eventLog} />
+
+          <RecentActivity
+            events={eventLog}
+            players={displaySetups}
+            onOpenFull={() => setActivityOpen(true)}
+          />
 
           {lastError && (
             <p className="px-4 py-2 text-center text-caption text-semantic-error">{lastError}</p>

@@ -230,11 +230,15 @@ interface GameLogProps {
   events: readonly GameEvent[];
   /** Player setups, so log lines show display names instead of raw ids. */
   players: readonly PlayerSetup[];
+  /** Cap the feed to the newest N describable lines (e.g. the on-page recent
+   *  feed shows the last 10). Omit for the full history. */
+  limit?: number;
 }
 
 /** The full activity feed as a plain list, newest first. Presentational — the
- *  container (the Activity sheet) supplies the heading and scrolling. */
-export function GameLog({ events, players }: GameLogProps) {
+ *  container (the Activity sheet or the on-page recent feed) supplies the
+ *  heading and scrolling. */
+export function GameLog({ events, players, limit }: GameLogProps) {
   const { t } = useTranslation();
 
   // Resolve ids to display names at render time — events persist raw ids, so
@@ -246,10 +250,11 @@ export function GameLog({ events, players }: GameLogProps) {
 
   // Newest first, so the latest action is at the top. Keys use the original
   // index (append-only log) so React reuses rows as the list grows.
-  const lines = events
+  const all = events
     .map((event, i) => ({ i, line: describeEvent(event, t, nameFor) }))
     .filter((row): row is { i: number; line: string } => row.line !== null)
     .reverse();
+  const lines = limit != null ? all.slice(0, limit) : all;
 
   if (lines.length === 0) {
     return <p className="text-body text-text-secondary">Nothing has happened yet.</p>;
@@ -263,5 +268,39 @@ export function GameLog({ events, players }: GameLogProps) {
         </p>
       ))}
     </div>
+  );
+}
+
+/**
+ * A compact, always-on-page feed of the latest moves (newest first), capped to
+ * the last 10 and scrolling internally so it stays a fixed size beside the
+ * board. The full move-by-move history still lives in the Activity sheet,
+ * reachable via "See all".
+ */
+export function RecentActivity({
+  events,
+  players,
+  onOpenFull,
+}: GameLogProps & { onOpenFull?: () => void }) {
+  return (
+    <section className="mx-3 mb-2 flex min-h-0 flex-col rounded-md bg-bg-surface">
+      <div className="flex items-center justify-between px-3 pb-1 pt-2">
+        <h3 className="text-caption font-semibold uppercase tracking-wide text-text-secondary">
+          Recent activity
+        </h3>
+        {onOpenFull && (
+          <button
+            type="button"
+            onClick={onOpenFull}
+            className="text-caption font-semibold text-brand-primary-strong hover:underline"
+          >
+            See all
+          </button>
+        )}
+      </div>
+      <div className="max-h-52 overflow-y-auto px-3 pb-2">
+        <GameLog events={events} players={players} limit={10} />
+      </div>
+    </section>
   );
 }
