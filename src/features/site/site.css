@@ -21,8 +21,8 @@
   --gold-press: #c9962d;
   --gold-ink: #e6b54a; /* gold used as TEXT / accents */
   --cream: #f5ebd7; /* collectible tile background — constant */
-  --ink: #f5ebd7; /* primary text on premium surfaces */
-  --ink-muted: #8a92a5; /* secondary text */
+  --ink: #ece2cd; /* softened warm cream text — less glare on navy */
+  --ink-muted: #949ab0; /* secondary text (a touch warmer/softer) */
   --coral: #ef6a5b;
   --mint: #72c7a6;
   --border: #2d3650;
@@ -31,8 +31,8 @@
   --shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 28px 64px rgba(0, 0, 0, 0.52);
   /* glassy card finish: a soft top sheen + a 1px inner highlight give depth */
-  --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0) 62%);
-  --card-hi: rgba(255, 255, 255, 0.08);
+  --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0) 62%);
+  --card-hi: rgba(255, 255, 255, 0.06);
   --glow: rgba(230, 181, 74, 0.5);
   --glow-soft: rgba(230, 181, 74, 0.16);
   /* property collectible tones (constant across themes) */
@@ -58,25 +58,27 @@
 /* Premium LIGHT variant — warm ivory world, same gold identity. Drives off the
    app's existing [data-theme="light"] toggle so the whole site switches as one. */
 [data-theme="light"] {
-  --bg: #f7f0df; /* warmer, more inviting ivory */
-  --surface: #fffdf7;
-  --surface-2: #f4ecda;
-  --gold-ink: #a9761a; /* darker gold so accents stay legible on ivory */
-  --cream: #fbf4e3;
-  --ink: #201b12;
-  --ink-muted: #726a5c; /* warm-grey secondary, not cool blue-grey */
-  --coral: #df5749;
-  --mint: #349b78;
-  --border: #ecdfc6;
-  --hair: rgba(90, 60, 20, 0.1);
-  --nav-bg: rgba(250, 245, 233, 0.8);
-  /* warm, soft shadows (brown-tinted, not grey) — premium-paper feel */
-  --shadow: 0 14px 34px rgba(120, 86, 30, 0.14);
-  --shadow-lg: 0 28px 60px rgba(120, 86, 30, 0.22);
-  --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 55%);
-  --card-hi: rgba(255, 255, 255, 0.95);
-  --glow: rgba(201, 150, 45, 0.42);
-  --glow-soft: rgba(230, 181, 74, 0.14);
+  /* Soft, low-glare "warm paper at golden hour" — easy on the eyes, no stark
+     white surfaces and no near-black text. */
+  --bg: #f0e7d3; /* calm warm cream (not bright ivory) */
+  --surface: #f9f3e6; /* soft off-white card — no white glare */
+  --surface-2: #ece1cc;
+  --gold-ink: #9a6a18;
+  --cream: #f6efdc;
+  --ink: #382e1d; /* warm dark brown — gentler contrast than near-black */
+  --ink-muted: #7e7466;
+  --coral: #cd6153; /* softened, less shouty */
+  --mint: #40947a;
+  --border: #e5d9be;
+  --hair: rgba(80, 55, 20, 0.09);
+  --nav-bg: rgba(242, 235, 219, 0.82);
+  /* gentler warm shadows */
+  --shadow: 0 12px 30px rgba(120, 90, 40, 0.1);
+  --shadow-lg: 0 24px 52px rgba(120, 90, 40, 0.16);
+  --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 55%);
+  --card-hi: rgba(255, 255, 255, 0.68);
+  --glow: rgba(201, 150, 45, 0.34);
+  --glow-soft: rgba(230, 181, 74, 0.1);
 }
 
 .lp {
@@ -131,6 +133,10 @@
   to {
     transform: translate3d(-2.5%, 1.8%, 0) scale(1.07);
   }
+}
+/* Keep the light theme calm — dim the ambient glow so it never reads as bright. */
+[data-theme="light"] .lp:not(.lp-bar)::before {
+  opacity: 0.5;
 }
 
 /* Header-only chrome for gameplay routes: the premium bar sits above the

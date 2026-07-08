@@ -71,8 +71,8 @@
   --color-bg-base: #121726; /* premium navy canvas */
   --color-bg-surface: #20273a; /* premium surface */
   --color-bg-raised: #262f47;
-  --color-text-primary: #f5ebd7; /* cream ink */
-  --color-text-secondary: #8a92a5;
+  --color-text-primary: #ece2cd; /* softened cream ink — less glare */
+  --color-text-secondary: #949ab0;
   --color-text-disabled: #5a6284;
 
   /* Elevation — dark theme leans on surface-color steps + soft glow,
@@ -85,17 +85,18 @@
 /* Light theme override. Same custom property names, new values —
    every component built on the tokens above needs zero changes. */
 [data-theme="light"] {
-  --color-bg-base: #f4efe3; /* warm ivory (premium light) */
-  --color-bg-surface: #fffdf8;
-  --color-bg-raised: #f2ebdb;
-  --color-text-primary: #1b2033;
-  --color-text-secondary: #6a7186;
-  --color-text-disabled: #a0a6b8;
+  /* Soft, low-glare warm paper — matches the marketing site's softened light. */
+  --color-bg-base: #f0e7d3;
+  --color-bg-surface: #f9f3e6; /* soft off-white, not stark white */
+  --color-bg-raised: #ece1cc;
+  --color-text-primary: #382e1d; /* warm dark brown, gentler than near-black */
+  --color-text-secondary: #7e7466;
+  --color-text-disabled: #a89e88;
 
   /* Deepened gold/coral for when the brand colour is used as *text/icon*
-     foreground on the ivory ground (the raw fills fail contrast there). */
-  --color-brand-primary-strong: #a9761a;
-  --color-brand-secondary-strong: #c0392b;
+     foreground on the warm ground (the raw fills fail contrast there). */
+  --color-brand-primary-strong: #9a6a18;
+  --color-brand-secondary-strong: #b34434;
 
   --shadow-e1: 0 1px 2px rgb(15 18 34 / 0.06);
   --shadow-e2: 0 4px 16px rgb(15 18 34 / 0.1);
