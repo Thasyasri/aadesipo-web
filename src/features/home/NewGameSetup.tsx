@@ -17,7 +17,8 @@ import {
   useGameView,
   buildAiOpponents,
   buildPassAndPlayPlayers,
-  AI_DISPLAY_NAMES,
+  aiDisplayNamesFor,
+  AI_PERSONALITY_LABEL,
   AI_DIFFICULTY_SKILL,
   type AiDifficulty,
 } from "@/state/gameStore";
@@ -41,7 +42,8 @@ const MODE_META: Record<ModeConfig["id"], { label: string; desc: string }> = {
   marathon: { label: "Marathon", desc: "Long haul — gentle pace, plays to elimination." },
 };
 
-const DIFFICULTIES: readonly AiDifficulty[] = ["easy", "normal", "hard"];
+const DIFFICULTIES: readonly AiDifficulty[] = ["easy", "moderate", "hard", "expert"];
+const DEFAULT_DIFFICULTY: AiDifficulty = "moderate";
 
 type Mode = "vs-ai" | "pass-and-play" | "online";
 
@@ -53,13 +55,31 @@ export function NewGameSetup() {
   const [joinCode, setJoinCode] = useState("");
   const [houseRules, setHouseRules] = useState<HouseRules>(DEFAULT_HOUSE_RULES);
   const [gameMode, setGameMode] = useState<ModeConfig>(CLASSIC_MODE);
-  const [difficulty, setDifficulty] = useState<AiDifficulty>("normal");
+  // One difficulty per AI seat, so you can mix (e.g. an Easy + an Expert).
+  const [difficulties, setDifficulties] = useState<AiDifficulty[]>([
+    DEFAULT_DIFFICULTY,
+    DEFAULT_DIFFICULTY,
+  ]);
   const [busy, setBusy] = useState(false);
   const navigate = useNavigate();
   const startGame = useGameView((s) => s.startGame);
   const { showToast } = useToast();
 
   const opponents = PERSONALITY_ROTATION.slice(0, aiCount);
+  const opponentNames = aiDisplayNamesFor(opponents);
+
+  // Changing the AI count resizes the per-seat difficulty list, keeping the
+  // seats you already tuned and defaulting any new ones.
+  const changeAiCount = (n: number) => {
+    setAiCount(n);
+    setDifficulties((prev) => {
+      const next = prev.slice(0, n);
+      while (next.length < n) next.push(DEFAULT_DIFFICULTY);
+      return next;
+    });
+  };
+  const setDifficultyAt = (i: number, d: AiDifficulty) =>
+    setDifficulties((prev) => prev.map((x, idx) => (idx === i ? d : x)));
 
   const handlePlayerCountChange = (n: number) => {
     setPlayerCount(n);
@@ -73,7 +93,11 @@ export function NewGameSetup() {
   const handleStart = () => {
     const players =
       mode === "vs-ai"
-        ? buildAiOpponents("You", opponents, AI_DIFFICULTY_SKILL[difficulty])
+        ? buildAiOpponents(
+            "You",
+            opponents,
+            difficulties.map((d) => AI_DIFFICULTY_SKILL[d]),
+          )
         : buildPassAndPlayPlayers(names.map((n) => n.trim() || "Player"));
     const gameId = crypto.randomUUID();
     analyticsEvents.gameStarted(mode, players.length);
@@ -273,31 +297,52 @@ export function NewGameSetup() {
               <Button
                 key={n}
                 variant={aiCount === n ? "primary" : "secondary"}
-                onClick={() => setAiCount(n)}
+                onClick={() => changeAiCount(n)}
                 className="!px-4 !py-2"
               >
                 {n}
               </Button>
             ))}
           </div>
-          <div className="mb-6 flex flex-wrap gap-2">
+          {/* Per-seat: each rival shows its Telugu play-style and its own
+              difficulty (the levels scroll horizontally on narrow screens). */}
+          <div className="mb-6 flex flex-col gap-2">
             {opponents.map((id, i) => (
-              <span key={i} className="rounded-pill bg-bg-raised px-3 py-1 text-caption">
-                {AI_DISPLAY_NAMES[id]} {PERSONALITY_EMOJI[id]}
-              </span>
-            ))}
-          </div>
-          <p className="mb-2 text-caption font-semibold text-text-secondary">Difficulty</p>
-          <div className="mb-6 flex gap-2">
-            {DIFFICULTIES.map((d) => (
-              <Button
-                key={d}
-                variant={difficulty === d ? "primary" : "secondary"}
-                onClick={() => setDifficulty(d)}
-                className="flex-1 !px-2 capitalize"
-              >
-                {d}
-              </Button>
+              <div key={i} className="rounded-md border border-bg-raised bg-bg-base p-3">
+                <div className="mb-2 flex items-center gap-2">
+                  <span aria-hidden="true">{PERSONALITY_EMOJI[id]}</span>
+                  <span className="text-body font-semibold text-text-primary">
+                    {opponentNames[i]}
+                  </span>
+                  <span className="text-caption text-text-secondary">
+                    · {AI_PERSONALITY_LABEL[id]}
+                  </span>
+                </div>
+                <div
+                  className="flex gap-2 overflow-x-auto pb-1"
+                  role="group"
+                  aria-label={`${opponentNames[i]} difficulty`}
+                >
+                  {DIFFICULTIES.map((d) => {
+                    const on = difficulties[i] === d;
+                    return (
+                      <button
+                        key={d}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setDifficultyAt(i, d)}
+                        className={`shrink-0 rounded-pill border px-3 py-1 text-caption font-semibold capitalize transition-colors ${
+                          on
+                            ? "border-brand-primary bg-brand-primary text-bg-base"
+                            : "border-bg-raised bg-bg-base text-text-secondary"
+                        }`}
+                      >
+                        {d}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             ))}
           </div>
           {modePanel}
