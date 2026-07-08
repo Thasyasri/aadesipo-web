@@ -63,7 +63,10 @@ export interface TaxTile {
   readonly type: "tax";
   readonly position: number;
   readonly name: string;
-  readonly amount: number;
+  /** Which dynamic formula applies when a player lands here (see computeTax
+   *  in rules/property.ts). Income scales with the properties you own; Luxury
+   *  with the buildings you own — a flat fee no longer applies. */
+  readonly variant: "income" | "luxury";
 }
 
 export interface SimpleTile {
@@ -76,6 +79,16 @@ export type Tile = PropertyTile | TransitTile | UtilityTile | TaxTile | SimpleTi
 
 export const BOARD_SIZE = 40;
 export const GO_SALARY = 200;
+
+/* Dynamic tax rates (engine units — ₹1,000 each). Taxes are no longer a flat
+ * fee: they are computed live from the landing player's holdings — see
+ * computeTax in rules/property.ts. Income Tax charges per property owned;
+ * Luxury Tax charges per building owned. */
+export const TAX_PER_COLOUR_PROPERTY = 25; // ₹25K per coloured property (Income Tax)
+export const TAX_PER_TRANSIT_UTILITY = 50; // ₹50K per station or utility (Income Tax)
+export const TAX_PER_HOUSE = 25; // ₹25K per house (Luxury Tax)
+export const TAX_PER_HOTEL = 50; // ₹50K per hotel (Luxury Tax)
+
 export const JAIL_POSITION = 10;
 export const GO_TO_JAIL_POSITION = 30;
 export const MAX_JAIL_TURNS = 3;
@@ -255,8 +268,8 @@ const SIMPLE_TILES: SimpleTile[] = [
 ];
 
 const TAX_TILES: TaxTile[] = [
-  { type: "tax", position: 4, name: "Income Tax", amount: 200 },
-  { type: "tax", position: 38, name: "Luxury Tax", amount: 100 },
+  { type: "tax", position: 4, name: "Income Tax", variant: "income" },
+  { type: "tax", position: 38, name: "Luxury Tax", variant: "luxury" },
 ];
 
 const ALL_TILES: Tile[] = [

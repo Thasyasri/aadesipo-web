@@ -9,6 +9,10 @@ import {
   MAX_JAIL_TURNS,
   HOUSE_SUPPLY,
   HOTEL_SUPPLY,
+  TAX_PER_COLOUR_PROPERTY,
+  TAX_PER_TRANSIT_UTILITY,
+  TAX_PER_HOUSE,
+  TAX_PER_HOTEL,
   LOAN_MAX_FRACTION,
   LOAN_INTEREST_PER_ROUND,
   STARTING_CASH_PRESETS,
@@ -314,11 +318,27 @@ const SEGMENTS: readonly Segment[] = [
     id: "taxes",
     title: "Taxes",
     body: (
-      <p>
-        <b>Income Tax</b> and <b>Luxury Tax</b> tiles: pay the stated amount to the <b>bank</b>.
-        With the Free Parking jackpot house rule on, those taxes pile up under Free Parking instead
-        of vanishing (see below).
-      </p>
+      <>
+        <p>
+          Tax is <b>not a flat fee</b> — the bill scales with what you own the moment you land, so a
+          bare board is cheap and an empire pays dearly.
+        </p>
+        <ul>
+          <li>
+            <b>Income Tax</b> — {formatRupees(TAX_PER_COLOUR_PROPERTY)} for every coloured property
+            you own, plus {formatRupees(TAX_PER_TRANSIT_UTILITY)} for every transit station or
+            utility.
+          </li>
+          <li>
+            <b>Luxury Tax</b> — {formatRupees(TAX_PER_HOUSE)} for every house you’ve built and{" "}
+            {formatRupees(TAX_PER_HOTEL)} for every hotel.
+          </li>
+        </ul>
+        <p>
+          It’s paid to the <b>bank</b>. With the Free Parking jackpot house rule on, those taxes
+          pile up under Free Parking instead of vanishing (see below).
+        </p>
+      </>
     ),
   },
   {

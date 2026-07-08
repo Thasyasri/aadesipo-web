@@ -4,6 +4,10 @@ import {
   getTile,
   isOwnable,
   propertiesInGroup,
+  TAX_PER_COLOUR_PROPERTY,
+  TAX_PER_HOTEL,
+  TAX_PER_HOUSE,
+  TAX_PER_TRANSIT_UTILITY,
   type PropertyGroup,
   type Tile,
 } from "../economy/index.js";
@@ -31,6 +35,34 @@ export function propertiesOwnedBy(state: GameState, playerId: string): readonly 
   return BOARD.filter(isOwnable)
     .map((t) => t.position)
     .filter((pos) => ownerOf(state, pos) === playerId);
+}
+
+/**
+ * The tax a player owes when they LAND on a tax tile — computed live from
+ * their holdings rather than a flat fee:
+ *   income → ₹25K per coloured property + ₹50K per station/utility owned.
+ *   luxury → ₹25K per house + ₹50K per hotel owned.
+ * Returns engine units (₹1,000 each); 0 when they own nothing that counts.
+ */
+export function computeTax(
+  state: GameState,
+  playerId: string,
+  variant: "income" | "luxury",
+): number {
+  const owned = propertiesOwnedBy(state, playerId);
+  if (variant === "income") {
+    return owned.reduce(
+      (sum, pos) =>
+        sum +
+        (getTile(pos).type === "property" ? TAX_PER_COLOUR_PROPERTY : TAX_PER_TRANSIT_UTILITY),
+      0,
+    );
+  }
+  return owned.reduce((sum, pos) => {
+    const o = ownershipAt(state, pos);
+    if (!o) return sum;
+    return sum + o.houses * TAX_PER_HOUSE + (o.hasHotel ? TAX_PER_HOTEL : 0);
+  }, 0);
 }
 
 function countOwnedInGroup(state: GameState, playerId: string, group: PropertyGroup): number {

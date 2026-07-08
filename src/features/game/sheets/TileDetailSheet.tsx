@@ -5,6 +5,10 @@ import {
   GO_SALARY,
   JAIL_BAIL_COST,
   MAX_JAIL_TURNS,
+  TAX_PER_COLOUR_PROPERTY,
+  TAX_PER_HOTEL,
+  TAX_PER_HOUSE,
+  TAX_PER_TRANSIT_UTILITY,
   calculateRent,
   getTile,
   hasMonopoly,
@@ -79,8 +83,22 @@ function TileContent({
         <SimpleDetail
           title={tile.name}
           accent={accent}
-          description="Land here and pay this tax straight to the bank."
-          rows={[{ label: "You pay", value: formatRupees(tile.amount) }]}
+          description={
+            tile.variant === "income"
+              ? "Land here and pay income tax to the bank — it scales with the properties you own."
+              : "Land here and pay luxury tax to the bank — it scales with the buildings you own."
+          }
+          rows={
+            tile.variant === "income"
+              ? [
+                  { label: "Per coloured property", value: formatRupees(TAX_PER_COLOUR_PROPERTY) },
+                  { label: "Per station / utility", value: formatRupees(TAX_PER_TRANSIT_UTILITY) },
+                ]
+              : [
+                  { label: "Per house", value: formatRupees(TAX_PER_HOUSE) },
+                  { label: "Per hotel", value: formatRupees(TAX_PER_HOTEL) },
+                ]
+          }
         />
       );
     case "chance":

@@ -17,6 +17,7 @@ import {
 import {
   canAfford,
   handleBankruptcy,
+  computeTax,
   movePlayer,
   ownerOf,
   ownershipAt,
@@ -378,11 +379,13 @@ export function resolveLandedTile(
   }
 
   if (tile.type === "tax") {
-    if (!canAfford(player, tile.amount)) {
-      return enterDebtOrBankrupt(next, playerId, tile.amount, null, "tax", {}, events);
+    // Dynamic: the bill scales with what the landing player owns (see computeTax).
+    const taxDue = computeTax(next, playerId, tile.variant);
+    if (!canAfford(player, taxDue)) {
+      return enterDebtOrBankrupt(next, playerId, taxDue, null, "tax", {}, events);
     }
-    next = payTax(next, playerId, tile.amount);
-    events.push({ type: "TaxPaid", playerId, amount: tile.amount });
+    next = payTax(next, playerId, taxDue);
+    events.push({ type: "TaxPaid", playerId, amount: taxDue });
     return accept({ ...next, turnPhase: postTileResolutionPhase(next) }, events);
   }
 

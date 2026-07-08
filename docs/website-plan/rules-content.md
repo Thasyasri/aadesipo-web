@@ -93,7 +93,10 @@ Currency note: the engine stores amounts in units of ₹1,000. The UI shows them
 
 ## 12. Taxes
 
-- **Income Tax** and **Luxury Tax** tiles: pay the stated amount to the **bank**.
+Tax is **not a flat fee** — it scales with what you own the moment you land (a bare board is cheap; an empire pays dearly). Paid to the **bank**.
+
+- **Income Tax** — **₹25K per coloured property** you own, plus **₹50K per transit station or utility**.
+- **Luxury Tax** — **₹25K per house** you've built and **₹50K per hotel**.
 - _House rule "Free Parking jackpot":_ taxes pile up under Free Parking instead of vanishing (see §13).
 
 ## 13. Free Parking

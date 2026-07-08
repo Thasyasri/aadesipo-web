@@ -17,6 +17,10 @@ import {
   DEFAULT_HOUSE_RULES,
   getTile,
   JAIL_BAIL_COST,
+  TAX_PER_COLOUR_PROPERTY,
+  TAX_PER_TRANSIT_UTILITY,
+  TAX_PER_HOUSE,
+  TAX_PER_HOTEL,
 } from "../src/economy/index.js";
 import { checkWinCondition } from "../src/rules/win.js";
 import { currentSalary } from "../src/rules/movement.js";
@@ -26,6 +30,7 @@ import {
   canBuildOnProperty,
   canBuildEvenly,
   canSellEvenly,
+  computeTax,
   netWorth,
 } from "../src/rules/property.js";
 import { createRngState } from "../src/rng/index.js";
@@ -1102,19 +1107,26 @@ describe("house rules", () => {
 
   it("free-parking jackpot: tax feeds the pot (not the bank) and is scooped on landing", () => {
     const rules = { ...DEFAULT_HOUSE_RULES, freeParkingJackpot: true };
-    // Income Tax sits at position 4 (amount 200); a roll of 4 from GO lands there.
-    const taxStart = placeAt(
-      createInitialState("hr-pot-a", CLASSIC_MODE, ["p1", "p2"], rules),
-      "p1",
-      0,
-    );
+    // Income Tax sits at position 4; a roll of 4 from GO lands there. p1 owns two
+    // coloured properties, so the dynamic income tax is 2 * ₹25K.
+    const owned: PropertyOwnership = {
+      ownerId: "p1",
+      houses: 0,
+      hasHotel: false,
+      isMortgaged: false,
+    };
+    const expectedTax = 2 * TAX_PER_COLOUR_PROPERTY;
+    const taxStart = {
+      ...placeAt(createInitialState("hr-pot-a", CLASSIC_MODE, ["p1", "p2"], rules), "p1", 0),
+      properties: { 1: owned, 3: owned },
+    };
     const beforeTax = totalMoneyInSystem(taxStart);
     const taxed = rollForSum(taxStart, "p1", 4);
     expect(taxed.ok).toBe(true);
     if (!taxed.ok) return;
     expect(taxed.state.players.find((p) => p.id === "p1")!.position).toBe(4);
     // Money moved into the pot, the bank is untouched, and the total is conserved.
-    expect(taxed.state.freeParkingPot).toBe(200);
+    expect(taxed.state.freeParkingPot).toBe(expectedTax);
     expect(taxed.state.bank).toBe(taxStart.bank);
     expect(taxed.events.some((e) => e.type === "TaxPaid")).toBe(true);
     expect(totalMoneyInSystem(taxed.state)).toBe(beforeTax);
@@ -1136,12 +1148,19 @@ describe("house rules", () => {
   });
 
   it("free-parking jackpot off (classic): tax goes to the bank and the pot stays empty", () => {
-    const base = placeAt(freshGame(), "p1", 0);
+    // p1 owns two coloured properties -> income tax = 2 * ₹25K, paid to the bank.
+    const owned: PropertyOwnership = {
+      ownerId: "p1",
+      houses: 0,
+      hasHotel: false,
+      isMortgaged: false,
+    };
+    const base = { ...placeAt(freshGame(), "p1", 0), properties: { 1: owned, 3: owned } };
     const result = rollForSum(base, "p1", 4);
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.state.freeParkingPot).toBe(0);
-    expect(result.state.bank).toBe(base.bank + 200);
+    expect(result.state.bank).toBe(base.bank + 2 * TAX_PER_COLOUR_PROPERTY);
   });
 
   it("double GO salary: landing exactly on GO pays double, merely passing it pays single", () => {
@@ -1520,5 +1539,83 @@ describe("monopoly doubles base rent", () => {
       },
     };
     expect(calculateRent(withHouse, first.position, 7)).toBe(first.rent.oneHouse);
+  });
+});
+
+describe("dynamic taxes", () => {
+  const own = (extra?: Partial<PropertyOwnership>): PropertyOwnership => ({
+    ownerId: "p1",
+    houses: 0,
+    hasHotel: false,
+    isMortgaged: false,
+    ...extra,
+  });
+
+  it("income tax = ₹25K per coloured property + ₹50K per station/utility owned", () => {
+    const state: GameState = {
+      ...freshGame(),
+      properties: {
+        1: own(), // coloured property
+        3: own(), // coloured property
+        5: own(), // transit station
+        12: own(), // utility
+      },
+    };
+    // Sanity-check the fixture positions are the tile types we assume.
+    expect(getTile(1).type).toBe("property");
+    expect(getTile(5).type).toBe("transit");
+    expect(getTile(12).type).toBe("utility");
+    expect(computeTax(state, "p1", "income")).toBe(
+      2 * TAX_PER_COLOUR_PROPERTY + 2 * TAX_PER_TRANSIT_UTILITY,
+    );
+  });
+
+  it("luxury tax = ₹25K per house + ₹50K per hotel owned (bare holdings add nothing)", () => {
+    const state: GameState = {
+      ...freshGame(),
+      properties: {
+        1: own({ houses: 3 }), // three houses
+        3: own({ hasHotel: true }), // one hotel
+        5: own(), // a station — no buildings, contributes nothing
+      },
+    };
+    expect(computeTax(state, "p1", "luxury")).toBe(3 * TAX_PER_HOUSE + TAX_PER_HOTEL);
+  });
+
+  it("both taxes are zero when the player owns nothing that counts", () => {
+    const state = freshGame();
+    expect(computeTax(state, "p1", "income")).toBe(0);
+    expect(computeTax(state, "p1", "luxury")).toBe(0);
+  });
+
+  it("counts only the landing player's own holdings, not a rival's", () => {
+    const state: GameState = {
+      ...freshGame(),
+      properties: {
+        1: own(),
+        3: { ownerId: "p2", houses: 0, hasHotel: false, isMortgaged: false },
+      },
+    };
+    expect(computeTax(state, "p1", "income")).toBe(TAX_PER_COLOUR_PROPERTY);
+  });
+
+  it("landing on Luxury Tax charges the building-based bill (variant routed correctly)", () => {
+    // Luxury Tax sits at position 38; a roll of 4 from position 34 lands there.
+    const base: GameState = {
+      ...placeAt(freshGame(), "p1", 34),
+      properties: { 1: own({ houses: 3 }), 3: own({ hasHotel: true }) },
+    };
+    const before = totalMoneyInSystem(base);
+    const result = rollForSum(base, "p1", 4);
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.state.players.find((p) => p.id === "p1")!.position).toBe(38);
+    const expected = 3 * TAX_PER_HOUSE + TAX_PER_HOTEL;
+    const paid = result.events.find((e) => e.type === "TaxPaid");
+    expect(paid && paid.type === "TaxPaid" && paid.amount).toBe(expected);
+    expect(result.state.players.find((p) => p.id === "p1")!.cash).toBe(
+      CLASSIC_MODE.startingCash - expected,
+    );
+    expect(totalMoneyInSystem(result.state)).toBe(before);
   });
 });
