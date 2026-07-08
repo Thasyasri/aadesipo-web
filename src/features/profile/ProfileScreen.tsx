@@ -11,11 +11,18 @@ import { useStats } from "@/features/stats/useStats";
 import { StatStrip } from "@/features/stats/StatViews";
 
 export function ProfileScreen() {
-  const { status, user, profile, linkGoogle, signOut, updateDisplayName } = useSession();
+  const { status, user, profile, linkGoogle, signOut, updateDisplayName, setLeaderboardOptIn } =
+    useSession();
   const { stats } = useStats();
   const [name, setName] = useState(profile?.displayName ?? "");
   const [savingName, setSavingName] = useState(false);
   const { showToast } = useToast();
+
+  const optIn = profile?.leaderboardOptIn ?? false;
+  const toggleOptIn = async () => {
+    const res = await setLeaderboardOptIn(!optIn);
+    showToast(res.message ?? (res.ok ? "Saved." : "Couldn’t save."), res.ok ? "success" : "error");
+  };
 
   // Keep the edit field in sync when the profile loads/changes.
   useEffect(() => {
@@ -107,6 +114,29 @@ export function ProfileScreen() {
                 Save name
               </Button>
             </div>
+
+            <button
+              type="button"
+              onClick={() => void toggleOptIn()}
+              aria-pressed={optIn}
+              className="flex items-center justify-between gap-3 rounded-md border border-bg-raised bg-bg-base px-3 py-2 text-left"
+            >
+              <span>
+                <span className="block text-body text-text-primary">
+                  Show me on public leaderboards
+                </span>
+                <span className="block text-caption text-text-secondary">
+                  Only your online-game record is ranked. Off by default.
+                </span>
+              </span>
+              <span
+                className={`shrink-0 rounded-pill px-2 py-0.5 text-caption font-semibold ${
+                  optIn ? "bg-brand-primary text-bg-base" : "bg-bg-raised text-text-disabled"
+                }`}
+              >
+                {optIn ? "On" : "Off"}
+              </span>
+            </button>
 
             <div>
               <p className="mb-2 text-caption text-text-secondary">

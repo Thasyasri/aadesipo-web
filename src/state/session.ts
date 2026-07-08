@@ -7,6 +7,9 @@ export interface Profile {
   id: string;
   displayName: string | null;
   avatarUrl: string | null;
+  /** Whether this player has opted in to appear on public leaderboards (2c).
+   *  Defaults false; resilient to the column not existing pre-migration. */
+  leaderboardOptIn: boolean;
 }
 
 export type SessionStatus =
@@ -48,6 +51,7 @@ interface SessionState {
   /** Set a new password — used from the /reset recovery flow and Profile. */
   updatePassword: (password: string) => Promise<AuthResult>;
   updateDisplayName: (name: string) => Promise<AuthResult>;
+  setLeaderboardOptIn: (on: boolean) => Promise<AuthResult>;
 }
 
 async function ensureProfile(user: User): Promise<Profile> {
@@ -64,16 +68,15 @@ async function ensureProfile(user: User): Promise<Profile> {
     .upsert({ id: user.id, display_name: fullName }, { onConflict: "id", ignoreDuplicates: true });
   if (upsertError) throw upsertError;
 
-  const { data } = await supabase
-    .from("profiles")
-    .select("id, display_name, avatar_url")
-    .eq("id", user.id)
-    .maybeSingle();
+  // select("*") is deliberate: it tolerates the leaderboard_opt_in column not
+  // existing yet (pre-migration-0007) — it just comes back absent → false.
+  const { data } = await supabase.from("profiles").select("*").eq("id", user.id).maybeSingle();
 
   return {
     id: user.id,
-    displayName: data?.display_name ?? fullName,
-    avatarUrl: data?.avatar_url ?? null,
+    displayName: (data?.display_name as string | null | undefined) ?? fullName,
+    avatarUrl: (data?.avatar_url as string | null | undefined) ?? null,
+    leaderboardOptIn: (data?.leaderboard_opt_in as boolean | undefined) ?? false,
   };
 }
 
@@ -205,5 +208,18 @@ export const useSession = create<SessionState>((set, get) => ({
     if (error) return { ok: false, message: error.message };
     set((s) => ({ profile: s.profile ? { ...s.profile, displayName: name } : s.profile }));
     return { ok: true, message: "Name saved." };
+  },
+
+  setLeaderboardOptIn: async (on) => {
+    if (!supabase) return { ok: false, message: NOT_CONFIGURED };
+    const user = get().user;
+    if (!user) return { ok: false, message: "You’re not signed in." };
+    const { error } = await supabase
+      .from("profiles")
+      .update({ leaderboard_opt_in: on })
+      .eq("id", user.id);
+    if (error) return { ok: false, message: error.message };
+    set((s) => ({ profile: s.profile ? { ...s.profile, leaderboardOptIn: on } : s.profile }));
+    return { ok: true, message: on ? "You’re on the leaderboards." : "Removed from leaderboards." };
   },
 }));

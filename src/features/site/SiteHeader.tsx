@@ -40,6 +40,9 @@ export function SiteHeader() {
           <NavLink to="/dashboard" className={linkClass}>
             Dashboard
           </NavLink>
+          <NavLink to="/leaderboards" className={linkClass}>
+            Leaderboards
+          </NavLink>
           <NavLink to="/settings" className={linkClass}>
             Settings
           </NavLink>
