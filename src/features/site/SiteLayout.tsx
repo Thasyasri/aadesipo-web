@@ -1,6 +1,7 @@
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
+import { useScrollReveal } from "./motion";
 import "./site.css";
 
 /**
@@ -11,6 +12,7 @@ import "./site.css";
  * GameLayout instead, so it keeps the Festival theme until its own reskin step.
  */
 export function SiteLayout() {
+  useScrollReveal(useLocation().pathname);
   return (
     <div className="lp">
       <SiteHeader />

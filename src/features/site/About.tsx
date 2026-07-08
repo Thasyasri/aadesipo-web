@@ -1,6 +1,7 @@
 import { type ReactNode } from "react";
 import { Link } from "react-router";
 import { useDocumentMeta } from "./useDocumentMeta";
+import { CountUp } from "./motion";
 import { BOARD, GAME_MODES } from "@aadesipo/engine";
 import { featureIcons, PlayIcon, LotusIcon } from "./icons";
 
@@ -110,15 +111,21 @@ export function About() {
       <div className="statband">
         <div className="wrap stats">
           <div className="stat-c">
-            <div className="v">{cityCount}</div>
+            <div className="v">
+              <CountUp end={cityCount} />
+            </div>
             <div className="l">Telugu cities</div>
           </div>
           <div className="stat-c">
-            <div className="v">{BOARD.length}</div>
+            <div className="v">
+              <CountUp end={BOARD.length} />
+            </div>
             <div className="l">Board tiles</div>
           </div>
           <div className="stat-c">
-            <div className="v">{GAME_MODES.length}</div>
+            <div className="v">
+              <CountUp end={GAME_MODES.length} />
+            </div>
             <div className="l">Game modes</div>
           </div>
           <div className="stat-c">

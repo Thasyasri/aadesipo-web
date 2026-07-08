@@ -5,6 +5,7 @@ import { formatRupees } from "@/utils/currency";
 import { tileCode } from "@/utils/tileCode";
 import { placeIcons, featureIcons, PlayIcon, ArrowUpIcon, LotusIcon } from "./icons";
 import { useDocumentMeta } from "./useDocumentMeta";
+import { CountUp } from "./motion";
 
 /* ---- live-from-engine derivations (so the page can never drift) ---------- */
 
@@ -228,15 +229,21 @@ export function Landing() {
       <div className="statband">
         <div className="wrap stats">
           <div className="stat-c">
-            <div className="v">{propertyCount}</div>
+            <div className="v">
+              <CountUp end={propertyCount} />
+            </div>
             <div className="l">Telugu cities</div>
           </div>
           <div className="stat-c">
-            <div className="v">{BOARD.length}</div>
+            <div className="v">
+              <CountUp end={BOARD.length} />
+            </div>
             <div className="l">Board tiles</div>
           </div>
           <div className="stat-c">
-            <div className="v">{GAME_MODES.length}</div>
+            <div className="v">
+              <CountUp end={GAME_MODES.length} />
+            </div>
             <div className="l">Game modes</div>
           </div>
           <div className="stat-c">

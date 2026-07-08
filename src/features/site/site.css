@@ -27,8 +27,14 @@
   --mint: #72c7a6;
   --border: #2d3650;
   --hair: rgba(255, 255, 255, 0.06);
-  --nav-bg: rgba(18, 23, 38, 0.74);
-  --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  --nav-bg: rgba(16, 20, 33, 0.72);
+  --shadow: 0 14px 36px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 28px 64px rgba(0, 0, 0, 0.52);
+  /* glassy card finish: a soft top sheen + a 1px inner highlight give depth */
+  --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0) 62%);
+  --card-hi: rgba(255, 255, 255, 0.08);
+  --glow: rgba(230, 181, 74, 0.5);
+  --glow-soft: rgba(230, 181, 74, 0.16);
   /* property collectible tones (constant across themes) */
   --p-coral: #ef6a5b;
   --p-gold: #e6b54a;
@@ -52,19 +58,25 @@
 /* Premium LIGHT variant — warm ivory world, same gold identity. Drives off the
    app's existing [data-theme="light"] toggle so the whole site switches as one. */
 [data-theme="light"] {
-  --bg: #f4efe3;
-  --surface: #fffdf8;
-  --surface-2: #f2ebdb;
+  --bg: #f7f0df; /* warmer, more inviting ivory */
+  --surface: #fffdf7;
+  --surface-2: #f4ecda;
   --gold-ink: #a9761a; /* darker gold so accents stay legible on ivory */
   --cream: #fbf4e3;
-  --ink: #1b2033;
-  --ink-muted: #6a7186;
-  --coral: #d9564a;
-  --mint: #3f9e7d;
-  --border: #e7ddca;
-  --hair: rgba(20, 25, 40, 0.08);
-  --nav-bg: rgba(250, 246, 238, 0.82);
-  --shadow: 0 12px 30px rgba(28, 34, 51, 0.12);
+  --ink: #201b12;
+  --ink-muted: #726a5c; /* warm-grey secondary, not cool blue-grey */
+  --coral: #df5749;
+  --mint: #349b78;
+  --border: #ecdfc6;
+  --hair: rgba(90, 60, 20, 0.1);
+  --nav-bg: rgba(250, 245, 233, 0.8);
+  /* warm, soft shadows (brown-tinted, not grey) — premium-paper feel */
+  --shadow: 0 14px 34px rgba(120, 86, 30, 0.14);
+  --shadow-lg: 0 28px 60px rgba(120, 86, 30, 0.22);
+  --card-sheen: linear-gradient(180deg, rgba(255, 255, 255, 0.75), rgba(255, 255, 255, 0) 55%);
+  --card-hi: rgba(255, 255, 255, 0.95);
+  --glow: rgba(201, 150, 45, 0.42);
+  --glow-soft: rgba(230, 181, 74, 0.14);
 }
 
 .lp {
@@ -86,16 +98,39 @@
      (index.css), so no remap is needed here. */
 
   min-height: 100vh;
-  background:
-    radial-gradient(120% 65% at 84% -12%, rgba(230, 181, 74, 0.13), transparent 55%),
-    radial-gradient(90% 55% at 4% 0%, rgba(239, 106, 91, 0.09), transparent 55%),
-    radial-gradient(70% 40% at 50% 108%, rgba(114, 199, 166, 0.06), transparent 60%), var(--bg);
+  background: var(--bg);
   color: var(--ink);
   font-family: var(--sans);
   font-size: var(--s0);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  position: relative;
+  isolation: isolate; /* keep the ambient ::before behind this page's content */
+}
+
+/* Ambient light — soft gold/coral/mint glows that gently drift, giving the
+   page a living, premium atmosphere. Marketing pages only (not the game bar). */
+.lp:not(.lp-bar)::before {
+  content: "";
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 32% at 82% 6%, var(--glow-soft), transparent 60%),
+    radial-gradient(34% 30% at 4% 2%, rgba(239, 106, 91, 0.12), transparent 60%),
+    radial-gradient(42% 34% at 50% 106%, rgba(114, 199, 166, 0.09), transparent 62%),
+    radial-gradient(30% 26% at 24% 70%, rgba(169, 145, 247, 0.07), transparent 62%);
+  animation: lp-drift 26s ease-in-out infinite alternate;
+}
+@keyframes lp-drift {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  to {
+    transform: translate3d(-2.5%, 1.8%, 0) scale(1.07);
+  }
 }
 
 /* Header-only chrome for gameplay routes: the premium bar sits above the
@@ -659,10 +694,12 @@
   max-width: 60ch;
 }
 .lp .card {
-  background: var(--surface);
+  background: var(--card-sheen), var(--surface);
   border: 1px solid var(--hair);
   border-radius: var(--radius);
-  box-shadow: var(--shadow);
+  box-shadow:
+    var(--shadow),
+    inset 0 1px 0 var(--card-hi);
 }
 .lp .pad {
   padding: clamp(1.1rem, 2.5vw, 1.5rem);
@@ -1161,6 +1198,122 @@
   color: var(--ink-muted);
   margin: 0 0 1.6rem;
   max-width: 60ch;
+}
+
+/* ==========================================================================
+   Polish pass — hover micro-interactions, motion, scroll-reveal.
+   ========================================================================== */
+
+/* Card hover: lift + gold-tinted glow (interactive/feature cards only). */
+.lp .feat .card,
+.lp .rival,
+.lp .mode,
+.lp .step {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+.lp .feat .card:hover,
+.lp .rival:hover,
+.lp .mode:hover,
+.lp .step:hover {
+  transform: translateY(-4px);
+  box-shadow:
+    var(--shadow-lg),
+    inset 0 1px 0 var(--card-hi),
+    0 0 0 1px var(--glow-soft);
+  border-color: rgba(230, 181, 74, 0.28);
+}
+.lp .feat .ficon {
+  transition: transform 0.25s ease;
+}
+.lp .feat .card:hover .ficon {
+  transform: scale(1.08) rotate(-3deg);
+}
+
+/* Nav link: animated gold underline on hover / active. */
+.lp .navlinks a {
+  position: relative;
+}
+.lp .navlinks a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -5px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--gold), var(--gold-press));
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.24s ease;
+}
+.lp .navlinks a:hover::after,
+.lp .navlinks a.active::after {
+  transform: scaleX(1);
+}
+
+/* Gold button: a light shine sweeps across on hover. */
+.lp .btn-gold {
+  position: relative;
+  overflow: hidden;
+}
+.lp .btn-gold::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -70%;
+  width: 45%;
+  height: 100%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.45), transparent);
+  transform: skewX(-18deg);
+  transition: left 0.55s ease;
+  pointer-events: none;
+}
+.lp .btn-gold:hover::after {
+  left: 135%;
+}
+
+/* Collectible tiles lift on hover. */
+.lp .ptile {
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.28s ease;
+}
+.lp .boardstrip .ptile:hover {
+  transform: translateY(-5px) rotate(-1deg);
+  box-shadow: var(--shadow-lg);
+}
+
+/* Scroll reveal — elements fade+rise as they enter. Hidden state only applies
+   once JS marks the root `.reveal-ready`, so there's no flash without JS and
+   reduced-motion users get everything shown instantly (handled in the hook). */
+.lp .reveal {
+  transition:
+    opacity 0.6s ease,
+    transform 0.6s cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+.lp.reveal-ready .reveal {
+  opacity: 0;
+  transform: translateY(20px);
+}
+.lp.reveal-ready .reveal.in {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lp:not(.lp-bar)::before {
+    animation: none;
+  }
+  .lp .reveal {
+    transition: none;
+  }
+  .lp.reveal-ready .reveal {
+    opacity: 1;
+    transform: none;
+  }
 }
 .lp .rules-layout {
   display: grid;
