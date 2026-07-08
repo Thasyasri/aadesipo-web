@@ -32,7 +32,7 @@ export default defineConfig({
       srcDir: "src",
       filename: "sw.ts",
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg", "apple-touch-icon.png"],
+      includeAssets: ["favicon-32.png", "favicon-48.png", "apple-touch-icon.png"],
       manifest: {
         id: "/",
         name: "AadesiPo — The Telugu property game",

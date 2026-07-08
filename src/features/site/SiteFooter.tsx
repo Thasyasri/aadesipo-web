@@ -6,7 +6,7 @@ export function SiteFooter() {
       <div className="wrap">
         <div className="frow">
           <Link className="brand" to="/">
-            <span className="rupee">₹</span>
+            <img className="brand-logo" src="/logo-mark.png" alt="" width="34" height="34" />
             <span className="wm">
               Aadesi<span className="po">Po</span>
             </span>
