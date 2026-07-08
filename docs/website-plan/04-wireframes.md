@@ -1,5 +1,9 @@
 # 04 — Wireframes
 
+> **Status: Landing wireframed here and built & live.** Rules and About shipped
+> directly in the design system (no separate low-fi doc). Play/Profile/Settings adopt
+> the shared shell + premium tokens.
+
 Low-fidelity layout decisions per page, in the **Contemporary Indian Premium** system
 (see `03-design-system.md`). One page is fully specified at a time — we build it,
 then move to the next. **Landing is first** (the new front door).

@@ -1,7 +1,8 @@
 # 01 — Website Structure (Sitemap, Routing, Global Layout)
 
-Status: drafted for review. Scope reflects **D2 (public shell first)** and
-**D1 (guest-first, optional accounts)**.
+Status: **implemented and live.** The routing below is what ships today — `/` is the
+Landing, game setup moved to `/play`, and `/rules` + `/about` are built. Scope reflects
+**D2 (public shell first)** and **D1 (guest-first, optional accounts)**.
 
 ---
 

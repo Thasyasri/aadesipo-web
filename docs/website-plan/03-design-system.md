@@ -1,5 +1,9 @@
 # 03 — Design System · "Contemporary Indian Premium"
 
+> **Status: implemented in code and live.** Tokens are in `src/index.css` (`@theme`,
+> light+dark) and the scoped marketing layer `src/features/site/site.css`. Production
+> faces **Fraunces + Manrope** are loaded and applied app-wide.
+
 Locked visual direction (Decision **D3a**), specified by the user. Live style guide:
 the `design-system-v1` Artifact. Mood: _a premium digital board game with modern
 Indian warmth — clean, collectible, playful, and unmistakably local without clichés._
