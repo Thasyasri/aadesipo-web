@@ -11,6 +11,8 @@ const REVEAL_SELECTOR = [
   ".toc",
   ".sec-head",
   ".sec-sub",
+  ".ours-head",
+  ".touchstones > *",
   ".feat > *",
   ".rivals > *",
   ".modes > *",
@@ -25,7 +27,16 @@ const REVEAL_SELECTOR = [
   ".rules-point",
 ].join(",");
 
-const STAGGER_PARENTS = ["feat", "rivals", "modes", "steps", "boardstrip", "gmasonry", "stats"];
+const STAGGER_PARENTS = [
+  "feat",
+  "rivals",
+  "modes",
+  "steps",
+  "boardstrip",
+  "gmasonry",
+  "stats",
+  "touchstones",
+];
 
 /**
  * Scroll-reveal for the marketing pages. Call once (in the layout) with the

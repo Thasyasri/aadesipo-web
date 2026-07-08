@@ -299,6 +299,8 @@ export function Landing() {
         </div>
       </section>
 
+      <Ornament />
+
       {/* WHY THIS IS OURS */}
       <section id="ours">
         <div className="wrap">

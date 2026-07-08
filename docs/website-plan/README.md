@@ -17,18 +17,26 @@ Phase 1 (public site shell + premium redesign) is essentially **built and deploy
 Auto-deploys from `main` via Vercel.
 
 - **Pages:** Landing (`/`), Play setup (`/play`), Rules (`/rules`), About (`/about`),
-  Profile (`/profile`), Settings (`/settings`), premium 404, plus the gameplay routes.
-- **Shell:** one shared premium header (single Play CTA, Rules/About/Profile/Settings,
-  theme toggle) + footer across every page.
+  Gallery (`/gallery`), Profile (`/profile`), Settings (`/settings`), premium 404, plus
+  the gameplay routes.
+- **Shell:** one shared premium header (single Play CTA, Home/Rules/About/Gallery/
+  Profile/Settings, theme toggle) + footer across every page.
 - **Design system:** "Contemporary Indian Premium" tokens landed in the app's Tailwind
   `@theme` + a scoped marketing layer, **light + dark** site-wide, typography unified on
   **Fraunces + Manrope**. The in-game board, HUD and sheets are reskinned to match.
 - **Engine-sourced content:** the Rules page and the Landing/About stat bands read
   prices, rents, mode configs and the Chance/Sarpanch event tables straight from
   `packages/engine`, so they can't drift from the real game.
+- **SEO & social:** per-page titles/descriptions, Open Graph/Twitter cards, `og.png`,
+  `robots.txt` + `sitemap.xml`.
+- **Polish pass:** softened both themes (eased-on-the-eyes, no glare), a two-layer
+  ambient **colour aurora** on every marketing page, universal micro-interactions
+  (hover/press/reveal, light + dark), and a **"Why this is ours"** local-flavour band
+  (filter-coffee · RTC depots · first-day-first-show — state-neutral, festival-free).
+  AI rivals carry Telugu-audience tags (Rowdy / Konte / Pisinari).
 
-Remaining Phase-1 nice-to-have: a public Gallery page. Next planned pass: **SEO &
-social-sharing** (per-page titles/descriptions, Open Graph/Twitter cards, sitemap).
+Phase 1 is complete. Next: the **player platform** (Phase 2) and a queued **game-engine
+batch** (dynamic taxes, auction-opens-at-price, per-seat AI difficulty, scrollable log).
 
 ---
 
@@ -59,10 +67,10 @@ Future decisions get appended here as we make them.
 
 ## Phase roadmap
 
-- **Phase 1 — Public site shell + bolder design system** (**shipped**, bar Gallery)
-  ✅ Landing · Play · About · **Rules / How to Play** · global nav + footer · 404 ·
-  design system (light+dark, Fraunces+Manrope) · game reskinned to match.
-  ⏳ Remaining: public Gallery page; SEO & social-sharing pass.
+- **Phase 1 — Public site shell + bolder design system** (**shipped, complete**)
+  ✅ Landing · Play · About · **Rules / How to Play** · Gallery · global nav + footer ·
+  404 · design system (light+dark, Fraunces+Manrope, softened palette + ambient aurora ·
+  micro-interactions) · SEO & social-sharing · game reskinned to match.
 - **Phase 2 — Player platform**
   Optional accounts (Supabase Auth), expanded Profile, Dashboard, Leaderboards, stats.
 - **Phase 3 — Community & scale**

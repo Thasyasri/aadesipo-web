@@ -856,7 +856,8 @@
   font-size: 1.02rem;
   border-left: 2px solid var(--coral);
   padding-left: 0.7rem;
-  margin-top: 0.2rem;
+  margin-top: auto; /* pin quotes to the card bottom so the three align */
+  padding-top: 0.6rem;
 }
 
 /* why this is ours — a warmly-tinted panel of Telugu touchstones (filter
@@ -877,7 +878,7 @@
 }
 .lp .ours-head {
   max-width: 58ch;
-  margin-bottom: 1.7rem;
+  margin-bottom: 1.5rem;
 }
 .lp .ours-head h2 {
   font-family: var(--serif);
@@ -892,6 +893,8 @@
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 1.2rem;
+  border-top: 1px solid var(--hair);
+  padding-top: 1.6rem;
 }
 @media (max-width: 760px) {
   .lp .touchstones {

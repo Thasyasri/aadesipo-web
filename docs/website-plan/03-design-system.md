@@ -37,6 +37,27 @@ giant rangolis. Gold is the brand colour — used with restraint, never everywhe
 
 Semantic colour (good/warn) is **separate from the gold accent** — coral = attention/negative, mint = success/positive.
 
+### Eased-on-the-eyes tuning (live)
+
+Both themes were softened so neither glares (per user: bright light theme "made viewers
+close their eyes"). Text roles are split from `--cream` so the tile colour stays constant
+while ink softens per theme:
+
+- **Dark:** ink `#ece2cd` (softened cream, not stark), muted `#949ab0`; gentler inner
+  card highlights.
+- **Light:** a calm _warm paper at golden hour_ — `--bg #f0e7d3`, off-white card
+  `--surface #f9f3e6` (no white glare), warm-brown ink `#382e1d`, deepened gold/coral
+  for foreground contrast, softer warm shadows.
+
+### Ambient aurora (live)
+
+Every marketing page (not the game bar) carries a **two-layer radial-gradient aurora** —
+gold · coral · mint · lavender · sky — driven by theme-aware `--au-*` tokens. `::before`
+and `::after` counter-drift on slow GPU transforms (26s / 34s) so the colour gently
+breathes; alphas stay modest so it reads **rich but never bright**, and scrolling stays
+smooth. Light gets its own softened-but-rich tints (not a dimmed dark). The "Why this is
+ours" panel reuses the same hues as a fixed gradient card.
+
 ### Property tones (softer than Monopoly — collectible, not toy)
 
 ```

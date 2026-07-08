@@ -60,11 +60,21 @@ Mobile-first single column; desktop widens hero and switches feature/mode grids 
 
   ── lotus ornament divider ──
 
+  WHY THIS IS OURS  (warmly-tinted gradient panel — "why it feels like home")
+  eyebrow: MADE IN THE TELUGU STATES   H2(serif): Why this one feels like home
+  hairline
+  [ ☕ Filter-coffee pace ] [ 🚌 RTC-depot stops ] [ 🎬 First-day-first-show ]
+  (state-neutral touchstones — no festival that leans one state over the other)
+
+  ── lotus ornament divider ──
+
   MEET YOUR RIVALS  (personality showcase — fun, memorable)
-  [ 🎲 The Gambler   ] [ 😈 The Troll      ] [ 💰 The Miser      ]
+  [ 🎲 Rowdy          ] [ 😈 Konte          ] [ 💰 Pisinari       ]
     "All in, always"     "Chaos merchant"      "Never overpays"
-    + one-line taunt      + one-line taunt      + one-line taunt
-  (the three real AI personalities: gambler / troll / miser · easy→hard)
+    + one-line read       + one-line read       + one-line read
+    + italic taunt        + italic taunt        + italic taunt (bottom-aligned)
+  (the three real AI personalities: gambler / troll / miser · easy→hard.
+   Telugu-audience tags Rowdy / Konte / Pisinari)
 
   MODES  (sec-head + "pick your pace")
   [ Classic          ] [ Quick             ] [ Marathon          ]
@@ -108,9 +118,13 @@ Mobile-first single column; desktop widens hero and switches feature/mode grids 
 - **Wow + warmth without clichés:** a cheeky ownership headline (gold "own" / coral
   "bankrupt"), a stats band for instant substance, and a **Meet your rivals**
   personality section. Telugu warmth is carried in **romanized / code-mix English**,
-  **not Telugu script** (per user: actual script felt awkward): "Namaskaram, rendaam!"
+  **not Telugu script** (per user: actual script felt awkward): "Namaskaram!"
   greeting, "One more game, anna?" final CTA, "anna" in rival taunts, "Made with ❤️ in
   the Telugu states". Keeps within the design-system "tiny Indian touches" rule.
+- **"Why this is ours" band:** a light-touch local-flavour section — filter-coffee
+  pace, RTC-depot transit tiles, first-day-first-show cinema — kept **state-neutral**
+  and **festival-free** (nothing that leans one Telugu state over the other), sitting
+  on a warmly-tinted gradient panel that echoes the site's ambient aurora.
 - **Real content only.** All city names + prices come from the engine board
   (`packages/engine/.../board.ts`). Earlier placeholder tiles (Araku Valley, RTC
   Complex, Prasads IMAX) were **removed** — they were never on the board. The live
