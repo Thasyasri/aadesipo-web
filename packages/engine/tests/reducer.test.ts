@@ -16,6 +16,7 @@ import {
   GO_SALARY,
   DEFAULT_HOUSE_RULES,
   getTile,
+  JAIL_BAIL_COST,
 } from "../src/economy/index.js";
 import { checkWinCondition } from "../src/rules/win.js";
 import { currentSalary } from "../src/rules/movement.js";
@@ -153,6 +154,27 @@ describe("jail", () => {
       }
     }
     expect(found).toBe(true);
+  });
+
+  it("pays bail and reports it: PayBail releases via 'bail' and deducts the cost", () => {
+    let state = freshGame();
+    state = {
+      ...state,
+      players: state.players.map((p) =>
+        p.id === "p1" ? { ...p, inJail: true, jailTurnsRemaining: 2, position: 10 } : p,
+      ),
+    };
+    const cashBefore = state.players.find((p) => p.id === "p1")!.cash;
+    const result = applyAction(state, { type: "PayBail", playerId: "p1" });
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    const released = result.events.find(
+      (e): e is Extract<GameEvent, { type: "ReleasedFromJail" }> => e.type === "ReleasedFromJail",
+    );
+    expect(released?.via).toBe("bail");
+    const p1 = result.state.players.find((p) => p.id === "p1")!;
+    expect(p1.inJail).toBe(false);
+    expect(p1.cash).toBe(cashBefore - JAIL_BAIL_COST);
   });
 
   it("goes bankrupt to the bank if bail can't be paid on the third failed jail attempt", () => {

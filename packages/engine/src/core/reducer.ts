@@ -230,7 +230,7 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
   if (player.inJail) {
     if (roll.isDoubles) {
       next = releaseFromJail(next, playerId);
-      events.push({ type: "ReleasedFromJail", playerId });
+      events.push({ type: "ReleasedFromJail", playerId, via: "doubles" });
       next = { ...next, doublesStreak: 0 };
       return resolveMovementAndTile(next, playerId, diceSum, events);
     }
@@ -260,7 +260,7 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
     }
     next = payToBank(next, playerId, JAIL_BAIL_COST);
     next = releaseFromJail(next, playerId);
-    events.push({ type: "ReleasedFromJail", playerId });
+    events.push({ type: "ReleasedFromJail", playerId, via: "bail" });
     next = { ...next, doublesStreak: 0 };
     return resolveMovementAndTile(next, playerId, diceSum, events);
   }
@@ -528,7 +528,7 @@ function handlePayBail(state: GameState, playerId: string): ActionResult {
   let next = payToBank(state, playerId, JAIL_BAIL_COST);
   next = releaseFromJail(next, playerId);
   next = { ...next, turnPhase: "awaiting-roll" };
-  return accept(next, [{ type: "ReleasedFromJail", playerId }]);
+  return accept(next, [{ type: "ReleasedFromJail", playerId, via: "bail" }]);
 }
 
 function handleUseJailFreeCard(state: GameState, playerId: string): ActionResult {
@@ -546,7 +546,7 @@ function handleUseJailFreeCard(state: GameState, playerId: string): ActionResult
   };
   next = releaseFromJail(next, playerId);
   next = { ...next, turnPhase: "awaiting-roll" };
-  return accept(next, [{ type: "ReleasedFromJail", playerId }]);
+  return accept(next, [{ type: "ReleasedFromJail", playerId, via: "card" }]);
 }
 
 function handleBuyProperty(state: GameState, playerId: string, position: number): ActionResult {
@@ -860,7 +860,7 @@ function handleSettleDebt(state: GameState, playerId: string): ActionResult {
 
   if (debt.reason === "jail-bail") {
     next = releaseFromJail(next, playerId);
-    events.push({ type: "ReleasedFromJail", playerId });
+    events.push({ type: "ReleasedFromJail", playerId, via: "bail" });
     next = { ...next, doublesStreak: 0 };
     return resolveMovementAndTile(next, playerId, debt.diceSum ?? 0, events);
   }

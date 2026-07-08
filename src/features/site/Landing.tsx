@@ -56,13 +56,13 @@ const RIVAL_COPY: Record<
 > = {
   gambler: {
     emoji: "🎲",
-    tag: "The Gambler",
+    tag: "Rowdy",
     title: "All in, always",
     quote: "“Fortune favours the reckless, anna.”",
   },
   troll: {
     emoji: "😈",
-    tag: "The Troll",
+    tag: "Konte",
     title: "Chaos merchant",
     quote: (
       <>
@@ -72,7 +72,7 @@ const RIVAL_COPY: Record<
   },
   miser: {
     emoji: "💰",
-    tag: "The Miser",
+    tag: "Pisinari",
     title: "Never overpays",
     quote: "“Patience is the cheapest asset.”",
   },

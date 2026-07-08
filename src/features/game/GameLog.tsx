@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from "react";
-import { getTile, type GameEvent, type TradeAssets } from "@aadesipo/engine";
+import { getTile, JAIL_BAIL_COST, type GameEvent, type TradeAssets } from "@aadesipo/engine";
 import { sfx } from "@/services/audio";
 import { useTranslation, type TranslationKey } from "@/i18n";
 import type { PlayerSetup } from "@/state/gameStore";
@@ -44,6 +44,13 @@ function describeEvent(event: GameEvent, t: TFunc, nameFor: NameFor): string | n
     case "SentToJail":
       return t("gameLog.sentToJail", { player: nameFor(event.playerId) });
     case "ReleasedFromJail":
+      if (event.via === "bail")
+        return t("gameLog.releasedFromJailBail", {
+          player: nameFor(event.playerId),
+          amount: formatRupees(JAIL_BAIL_COST),
+        });
+      if (event.via === "card")
+        return t("gameLog.releasedFromJailCard", { player: nameFor(event.playerId) });
       return t("gameLog.releasedFromJail", { player: nameFor(event.playerId) });
     case "PropertyPurchased":
       return t("gameLog.propertyPurchased", {

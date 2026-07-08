@@ -179,7 +179,12 @@ export type GameEvent =
     }
   | { readonly type: "PassedGo"; readonly playerId: string; readonly salary: number }
   | { readonly type: "SentToJail"; readonly playerId: string }
-  | { readonly type: "ReleasedFromJail"; readonly playerId: string }
+  | {
+      readonly type: "ReleasedFromJail";
+      readonly playerId: string;
+      /** How they got out: rolled doubles (free), paid bail, or used a card. */
+      readonly via: "doubles" | "bail" | "card";
+    }
   | {
       readonly type: "PropertyPurchased";
       readonly playerId: string;
