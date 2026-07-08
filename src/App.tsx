@@ -8,6 +8,7 @@ import { GameLayout } from "@/features/site/GameLayout";
 import { Landing } from "@/features/site/Landing";
 import { Rules } from "@/features/site/Rules";
 import { About } from "@/features/site/About";
+import { Gallery } from "@/features/site/Gallery";
 import { NotFound } from "@/features/site/NotFound";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { ProfileScreen } from "@/features/profile/ProfileScreen";
@@ -26,7 +27,8 @@ const OnlineGameScreen = lazy(() =>
     default: m.OnlineGameScreen,
   })),
 );
-const Gallery = lazy(() =>
+// Dev-only component reference (design-system showcase), kept at /gallery-dev.
+const DevGallery = lazy(() =>
   import("@/features/gallery/Gallery").then((m) => ({ default: m.Gallery })),
 );
 
@@ -49,6 +51,7 @@ export default function App() {
                 <Route index element={<Landing />} />
                 <Route path="rules" element={<Rules />} />
                 <Route path="about" element={<About />} />
+                <Route path="gallery" element={<Gallery />} />
                 <Route path="play" element={<HomeScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />
                 <Route path="settings" element={<SettingsScreen />} />
@@ -77,10 +80,10 @@ export default function App() {
                 />
                 {/* Dev-only component reference, not part of the real nav */}
                 <Route
-                  path="gallery"
+                  path="gallery-dev"
                   element={
                     <Suspense fallback={<RouteFallback />}>
-                      <Gallery />
+                      <DevGallery />
                     </Suspense>
                   }
                 />

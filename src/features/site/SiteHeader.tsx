@@ -20,11 +20,17 @@ export function SiteHeader() {
           </span>
         </Link>
         <div className="navlinks">
+          <NavLink to="/" end className={linkClass}>
+            Home
+          </NavLink>
           <NavLink to="/rules" className={linkClass}>
             Rules
           </NavLink>
           <NavLink to="/about" className={linkClass}>
             About
+          </NavLink>
+          <NavLink to="/gallery" className={linkClass}>
+            Gallery
           </NavLink>
           <NavLink to="/profile" className={linkClass}>
             Profile
