@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import type { User } from "@supabase/supabase-js";
 import { supabase, isSupabaseConfigured } from "@/services/supabase";
+import { syncUnsyncedResults } from "@/services/stats";
 
 export interface Profile {
   id: string;
@@ -91,7 +92,11 @@ export const useSession = create<SessionState>((set, get) => ({
       if (session?.user) {
         const nextStatus: SessionStatus = session.user.is_anonymous ? "guest" : "authenticated";
         ensureProfile(session.user)
-          .then((profile) => set({ user: session.user, profile, status: nextStatus }))
+          .then((profile) => {
+            set({ user: session.user, profile, status: nextStatus });
+            // Newly signed in? Flush any results captured while a guest.
+            if (nextStatus === "authenticated") void syncUnsyncedResults();
+          })
           .catch((err: Error) => set({ error: err.message, status: "error" }));
       } else {
         set({ user: null, profile: null, status: "loading" });

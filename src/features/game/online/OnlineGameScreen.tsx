@@ -26,6 +26,7 @@ export function OnlineGameScreen() {
   const { roomId } = useParams<{ roomId: string }>();
   const { user } = useSession();
   const storeRoomId = useOnlineGameView((s) => s.roomId);
+  const onlineGameId = useOnlineGameView((s) => s.gameId);
   const game = useOnlineGameView((s) => s.game);
   const playerIds = useOnlineGameView((s) => s.playerIds);
   const recentEvents = useOnlineGameView((s) => s.recentEvents);
@@ -253,9 +254,11 @@ export function OnlineGameScreen() {
         onClose={() => setInspectPosition(null)}
       />
       <VictoryDialog
+        gameId={onlineGameId}
         game={game}
         players={displaySetups}
         mode="online"
+        localPlayerId={user.id}
         onPlayAgain={() => navigate("/play")}
       />
     </>

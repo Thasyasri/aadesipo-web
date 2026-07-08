@@ -107,29 +107,34 @@ signed-in players (local + synced).
 ### Capture — where the data comes from
 
 The engine already emits everything we need at game-over; nothing new in the
-engine. At `turnPhase === "game-over"` we assemble one **GameResult**:
+engine. At `turnPhase === "game-over"` we assemble one **GameResult** for the
+local "you" (as built):
 
 ```
 GameResult {
-  id            uuid
+  id            string   // the engine game id — one row per game (dedup key)
   finishedAt    timestamp
   mode          "classic" | "quick" | "marathon"
-  source        "local-vs-ai" | "local-pass-and-play" | "online"
+  source        "vs-ai" | "online"
   playerCount   number
-  winnerId      string            // engine GameState.winnerId
+  won           boolean   // did YOU win (game.winnerId === localPlayerId)
   reason        "last-player-standing" | "net-worth-at-cap"   // win.ts
-  you: {
-    result      "win" | "loss"
-    netWorth    number            // netWorth(state, you) at end
-    rank        number            // final standing
-  }
-  opponents     { name, isAi, netWorth }[]   // for a "who you beat" line
-  durationMs    number
+  netWorth      number    // your final net worth (netWorth(state, you))
+  rank          number    // your final standing (1 = winner)
+  rounds        number    // game.roundNumber (game length)
+  cities        string[]  // real property tiles you held at the end (fav-cities)
+  synced        boolean   // pushed to Supabase yet (guests keep it local-only)
 }
 ```
 
-Capture point: the same place `VictoryDialog` already computes standings
-(`VictoryDialog.tsx`), so we reuse `netWorth()` and the winner data.
+Capture point: `VictoryDialog.tsx`, in the once-per-game block that already
+fires the completion analytics — it computes standings via `netWorth()` and
+receives a `localPlayerId` from each screen.
+
+**Only games with a single clear "you" are recorded** — **vs-AI** (the human)
+and **online** (your seat). **Pass-and-play is excluded**: it's a shared device
+with several humans, so there's no one player's result to attribute. (Those
+games still show in the resume list; they just don't feed personal stats.)
 
 ### Store — local-first, sync when signed in
 

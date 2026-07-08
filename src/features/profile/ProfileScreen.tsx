@@ -7,9 +7,12 @@ import { useToast } from "@/components/Toast";
 import { useSession } from "@/state/session";
 import { isSupabaseConfigured } from "@/services/supabase";
 import { Field } from "@/features/auth/AuthField";
+import { useStats } from "@/features/stats/useStats";
+import { StatStrip } from "@/features/stats/StatViews";
 
 export function ProfileScreen() {
   const { status, user, profile, linkGoogle, signOut, updateDisplayName } = useSession();
+  const { stats } = useStats();
   const [name, setName] = useState(profile?.displayName ?? "");
   const [savingName, setSavingName] = useState(false);
   const { showToast } = useToast();
@@ -54,6 +57,18 @@ export function ProfileScreen() {
             </p>
           </div>
         </div>
+
+        {stats && stats.games > 0 && (
+          <div className="mb-6 flex flex-col gap-3">
+            <StatStrip stats={stats} />
+            <Link
+              to="/dashboard"
+              className="self-start text-caption font-semibold text-brand-primary-strong hover:underline"
+            >
+              View your dashboard →
+            </Link>
+          </div>
+        )}
 
         {isGuest && (
           <div className="flex flex-col gap-3">

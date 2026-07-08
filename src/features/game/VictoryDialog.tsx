@@ -7,17 +7,29 @@ import { Button } from "@/components/Button";
 import type { PlayerSetup } from "@/state/gameStore";
 import { downloadShareCard, generateShareCard } from "./shareCard";
 import { analyticsEvents } from "@/services/analytics";
+import { recordGameResult } from "@/services/stats";
 import { useMotionPrefs } from "@/theme/motion";
 import { formatRupees } from "@/utils/currency";
 
 interface VictoryDialogProps {
+  gameId: string | null;
   game: GameState;
   players: readonly PlayerSetup[];
   mode: "vs-ai" | "pass-and-play" | "online";
+  /** The local player whose result to record for stats — the human in a vs-AI
+   *  game, your seat online, or null for pass-and-play (no single "you"). */
+  localPlayerId?: string | null;
   onPlayAgain: () => void;
 }
 
-export function VictoryDialog({ game, players, mode, onPlayAgain }: VictoryDialogProps) {
+export function VictoryDialog({
+  gameId,
+  game,
+  players,
+  mode,
+  localPlayerId,
+  onPlayAgain,
+}: VictoryDialogProps) {
   const open = game.turnPhase === "game-over" && game.winnerId !== null;
   const [shareCardUrl, setShareCardUrl] = useState<string | null>(null);
   const reported = useRef(false);
@@ -37,6 +49,11 @@ export function VictoryDialog({ game, players, mode, onPlayAgain }: VictoryDialo
           ? "last-player-standing"
           : "net-worth-at-cap";
       analyticsEvents.gameCompleted(mode, reason, game.players.length);
+      // Record a personal result where there's a single clear "you" (vs-AI or
+      // online). Pass-and-play is a shared device, so it's skipped.
+      if (gameId && localPlayerId && (mode === "vs-ai" || mode === "online")) {
+        void recordGameResult({ gameId, game, source: mode, localPlayerId });
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);

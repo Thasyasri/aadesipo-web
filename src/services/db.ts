@@ -32,12 +32,40 @@ export interface SavedSnapshot {
   state: GameState;
 }
 
+/**
+ * A finished-game summary for personal stats (Phase 2b). Stored local-first —
+ * every device keeps its own history — and synced to Supabase for signed-in
+ * players. Only games with a single clear "you" are recorded: vs-AI (the human)
+ * and online (your seat). Pass-and-play is excluded (shared device, no owner).
+ */
+export interface GameResult {
+  /** The engine game id — one result per game (natural dedup key). */
+  id: string;
+  finishedAt: number;
+  mode: "classic" | "quick" | "marathon";
+  source: "vs-ai" | "online";
+  playerCount: number;
+  /** Whether "you" won. */
+  won: boolean;
+  reason: "last-player-standing" | "net-worth-at-cap";
+  /** Your final net worth in engine units (×1000 = rupees). */
+  netWorth: number;
+  /** Your final standing (1 = winner). */
+  rank: number;
+  rounds: number;
+  /** Real property tiles you owned at game end (for the favourite-cities stat). */
+  cities: string[];
+  /** Pushed to Supabase yet? Guests keep it local-only (always false). */
+  synced: boolean;
+}
+
 const SNAPSHOT_EVERY_N_ACTIONS = 20;
 
 class AadesipoDB extends Dexie {
   gameMeta!: EntityTable<SavedGameMeta, "gameId">;
   gameActions!: EntityTable<SavedAction, "id">;
   gameSnapshots!: EntityTable<SavedSnapshot, "id">;
+  gameResults!: EntityTable<GameResult, "id">;
 
   constructor() {
     super("aadesipo");
@@ -45,6 +73,12 @@ class AadesipoDB extends Dexie {
       gameMeta: "gameId, updatedAt, isFinished",
       gameActions: "++id, gameId, seq, [gameId+seq]",
       gameSnapshots: "++id, gameId, seq, [gameId+seq]",
+    });
+    // v2 adds the finished-game results store for personal stats. Existing
+    // tables carry forward untouched.
+    this.version(2).stores({
+      // `synced` is a boolean, which IndexedDB can't index — filter it in JS.
+      gameResults: "id, finishedAt, mode, source",
     });
   }
 }
@@ -186,6 +220,34 @@ export async function loadGame(gameId: string): Promise<LoadedGame | null> {
 export async function listResumableGames(): Promise<SavedGameMeta[]> {
   const all = await db.gameMeta.orderBy("updatedAt").reverse().toArray();
   return all.filter((g) => !g.isFinished);
+}
+
+/* ---- finished-game results (Phase 2b personal stats) --------------------- */
+
+/** Idempotently record a finished-game result — keeps the first one seen for a
+ *  game, so a re-mount of the victory screen can't double-count. Returns true
+ *  if it was newly stored. */
+export async function saveGameResultLocal(result: GameResult): Promise<boolean> {
+  const existing = await db.gameResults.get(result.id);
+  if (existing) return false;
+  await db.gameResults.add(result);
+  return true;
+}
+
+/** All results, newest first. */
+export async function listGameResults(): Promise<GameResult[]> {
+  return db.gameResults.orderBy("finishedAt").reverse().toArray();
+}
+
+export async function listUnsyncedResults(): Promise<GameResult[]> {
+  return db.gameResults.filter((r) => !r.synced).toArray();
+}
+
+export async function markResultsSynced(ids: readonly string[]): Promise<void> {
+  await db.gameResults
+    .where("id")
+    .anyOf(ids as string[])
+    .modify({ synced: true });
 }
 
 export async function deleteGame(gameId: string): Promise<void> {

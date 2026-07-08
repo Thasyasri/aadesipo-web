@@ -268,9 +268,11 @@ export function GameScreen() {
         onClose={() => setInspectPosition(null)}
       />
       <VictoryDialog
+        gameId={gameId}
         game={game}
         players={players}
         mode={isPassAndPlay ? "pass-and-play" : "vs-ai"}
+        localPlayerId={isPassAndPlay ? null : (players.find((p) => p.ai === undefined)?.id ?? null)}
         onPlayAgain={handlePlayAgain}
       />
     </>

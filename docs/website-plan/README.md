@@ -77,7 +77,7 @@ Future decisions get appended here as we make them.
 - **Phase 2 — Player platform** (**planned** — see `08-phase-2-player-platform.md`)
   Additive to guest-first (D1). Three sub-phases:
   - **2a Durable identity** (**built**) — email+password (+reset) alongside Google; guest→account linking (keeps `user.id`); expanded Profile; header Sign-in. Routes `/login`, `/reset`.
-  - **2b Stats & your play** — persist a `game_result` at game-over (local-first + synced when signed in); personal stats; real Profile + Dashboard.
+  - **2b Stats & your play** (**built**) — persist a `game_result` at game-over (Dexie v2 local-first + synced when signed in); personal stats (win rate by mode, best net worth, streak, favourite cities); Profile stat strip + a `/dashboard` (resume + your play + recent results). vs-AI + online only (pass-and-play excluded). Needs Supabase migration `0006_game_results.sql`.
   - **2c Leaderboards** — online-validated rankings only (D4), opt-in and privacy-aware.
 - **Phase 3 — Community & scale**
   Achievements, news/updates, tournaments, messaging, i18n, admin — only as needed.
