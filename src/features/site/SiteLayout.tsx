@@ -1,20 +1,22 @@
 import { Outlet } from "react-router";
-import { SiteNav } from "./SiteNav";
+import { SiteHeader } from "./SiteHeader";
 import { SiteFooter } from "./SiteFooter";
 import "./site.css";
 
 /**
- * Layout for the public marketing pages (Landing now; About/Rules/Gallery
- * later). The `.lp` root establishes a committed dark-navy "Contemporary
- * Indian Premium" world with its own local tokens — deliberately isolated
- * from the in-app Festival Premium theme so the game is never reskinned by
- * anything here. No ThemeToggle: the marketing site is single-theme by design.
+ * Premium shell for the browsing pages (Landing, Play setup, Profile, Settings,
+ * 404). The `.lp` root establishes the theme-aware "Contemporary Indian Premium"
+ * world AND remaps the app's --color-* tokens, so pages built on the app's own
+ * components inherit this look automatically. The in-game board is under
+ * GameLayout instead, so it keeps the Festival theme until its own reskin step.
  */
 export function SiteLayout() {
   return (
     <div className="lp">
-      <SiteNav />
-      <Outlet />
+      <SiteHeader />
+      <main>
+        <Outlet />
+      </main>
       <SiteFooter />
     </div>
   );

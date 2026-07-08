@@ -12,11 +12,10 @@ export function SiteFooter() {
             </span>
           </Link>
           <div className="flinks">
+            <Link to="/">Home</Link>
             <Link to="/play">Play</Link>
-            <a href="#rules">Rules</a>
-            <a href="#rivals">Rivals</a>
-            <a href="#board">Board</a>
-            <a href="#about">About</a>
+            <Link to="/profile">Profile</Link>
+            <Link to="/settings">Settings</Link>
           </div>
         </div>
         <p className="fine">

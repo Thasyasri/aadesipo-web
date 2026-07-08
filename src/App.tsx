@@ -4,7 +4,9 @@ import { ThemeProvider } from "@/theme/ThemeProvider";
 import { ToastProvider } from "@/components/Toast";
 import { RootLayout } from "@/routes/RootLayout";
 import { SiteLayout } from "@/features/site/SiteLayout";
+import { GameLayout } from "@/features/site/GameLayout";
 import { Landing } from "@/features/site/Landing";
+import { NotFound } from "@/features/site/NotFound";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { ProfileScreen } from "@/features/profile/ProfileScreen";
 import { SettingsScreen } from "@/features/settings/SettingsScreen";
@@ -36,44 +38,49 @@ export default function App() {
       <ToastProvider>
         <BrowserRouter>
           <Routes>
-            {/* Public marketing site — committed dark "Contemporary Indian
-                Premium" world, isolated from the in-app theme. */}
-            <Route element={<SiteLayout />}>
-              <Route index element={<Landing />} />
-            </Route>
-            {/* In-app chrome. The game setup/home lives at /play now that the
-                marketing Landing owns "/". */}
+            {/* One session boot for the whole app; the two layouts below share
+                a single header and design system. */}
             <Route element={<RootLayout />}>
-              <Route path="play" element={<HomeScreen />} />
-              <Route path="profile" element={<ProfileScreen />} />
-              <Route path="settings" element={<SettingsScreen />} />
-              <Route
-                path="game/:gameId"
-                element={
-                  <Suspense fallback={<RouteFallback />}>
-                    <GameScreen />
-                  </Suspense>
-                }
-              />
-              <Route path="room/:roomId" element={<LobbyScreen />} />
-              <Route path="join/:roomCode" element={<JoinRoomScreen />} />
-              <Route
-                path="online/:roomId"
-                element={
-                  <Suspense fallback={<RouteFallback />}>
-                    <OnlineGameScreen />
-                  </Suspense>
-                }
-              />
-              {/* Dev-only component reference, not part of the real nav */}
-              <Route
-                path="gallery"
-                element={
-                  <Suspense fallback={<RouteFallback />}>
-                    <Gallery />
-                  </Suspense>
-                }
-              />
+              {/* Browsing pages — premium shell (header + footer), theme-aware,
+                  with the app tokens remapped so these adopt the premium look. */}
+              <Route element={<SiteLayout />}>
+                <Route index element={<Landing />} />
+                <Route path="play" element={<HomeScreen />} />
+                <Route path="profile" element={<ProfileScreen />} />
+                <Route path="settings" element={<SettingsScreen />} />
+                <Route path="*" element={<NotFound />} />
+              </Route>
+              {/* Gameplay — shared premium header on top, board content left on
+                  the Festival theme (reskin is a later step), no footer. */}
+              <Route element={<GameLayout />}>
+                <Route
+                  path="game/:gameId"
+                  element={
+                    <Suspense fallback={<RouteFallback />}>
+                      <GameScreen />
+                    </Suspense>
+                  }
+                />
+                <Route path="room/:roomId" element={<LobbyScreen />} />
+                <Route path="join/:roomCode" element={<JoinRoomScreen />} />
+                <Route
+                  path="online/:roomId"
+                  element={
+                    <Suspense fallback={<RouteFallback />}>
+                      <OnlineGameScreen />
+                    </Suspense>
+                  }
+                />
+                {/* Dev-only component reference, not part of the real nav */}
+                <Route
+                  path="gallery"
+                  element={
+                    <Suspense fallback={<RouteFallback />}>
+                      <Gallery />
+                    </Suspense>
+                  }
+                />
+              </Route>
             </Route>
           </Routes>
         </BrowserRouter>

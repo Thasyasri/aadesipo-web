@@ -7,22 +7,29 @@
    Tokens are verbatim from docs/website-plan/03-design-system.md.
    ========================================================================== */
 
-.lp {
-  /* core palette */
+/* Premium tokens live at :root so the shared header/footer work anywhere, and
+   they are THEME-AWARE — the same [data-theme] switch the game already uses.
+   Dark is the default; the light block below re-points the same names. Text
+   roles (--ink / --ink-muted / --gold-ink) are split from --cream, which stays
+   the constant collectible-tile colour in both themes. */
+:root {
   --bg: #121726;
   --surface: #20273a;
   --surface-2: #262f47;
-  --gold: #e6b54a;
+  --gold: #e6b54a; /* fills: buttons, coins, bands */
   --gold-hover: #f3c766;
   --gold-press: #c9962d;
-  --cream: #f5ebd7;
+  --gold-ink: #e6b54a; /* gold used as TEXT / accents */
+  --cream: #f5ebd7; /* collectible tile background — constant */
+  --ink: #f5ebd7; /* primary text on premium surfaces */
+  --ink-muted: #8a92a5; /* secondary text */
   --coral: #ef6a5b;
   --mint: #72c7a6;
-  --gray: #8a92a5;
   --border: #2d3650;
   --hair: rgba(255, 255, 255, 0.06);
+  --nav-bg: rgba(18, 23, 38, 0.74);
   --shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
-  /* property collectible tones */
+  /* property collectible tones (constant across themes) */
   --p-coral: #ef6a5b;
   --p-gold: #e6b54a;
   --p-mint: #72c7a6;
@@ -39,18 +46,67 @@
   --s2: clamp(1.5rem, 1.2rem + 1.3vw, 2.2rem);
   --s3: clamp(2.4rem, 1.6rem + 3.3vw, 4.2rem);
   --radius: 20px;
+}
+
+/* Premium LIGHT variant — warm ivory world, same gold identity. Drives off the
+   app's existing [data-theme="light"] toggle so the whole site switches as one. */
+[data-theme="light"] {
+  --bg: #f4efe3;
+  --surface: #fffdf8;
+  --surface-2: #f2ebdb;
+  --gold-ink: #a9761a; /* darker gold so accents stay legible on ivory */
+  --cream: #fbf4e3;
+  --ink: #1b2033;
+  --ink-muted: #6a7186;
+  --coral: #d9564a;
+  --mint: #3f9e7d;
+  --border: #e7ddca;
+  --hair: rgba(20, 25, 40, 0.08);
+  --nav-bg: rgba(250, 246, 238, 0.82);
+  --shadow: 0 12px 30px rgba(28, 34, 51, 0.12);
+}
+
+.lp {
+  /* App tokens remapped to premium so pages built on the app's components
+     (Play setup, Profile, Settings, 404) inherit this look automatically —
+     no per-page rewrites. The in-game board is NOT wrapped in .lp, so it
+     keeps the Festival Premium tokens untouched (reskinned in a later step). */
+  --color-bg-base: var(--bg);
+  --color-bg-surface: var(--surface);
+  --color-bg-raised: var(--surface-2);
+  --color-text-primary: var(--ink);
+  --color-text-secondary: var(--ink-muted);
+  --color-text-disabled: var(--ink-muted);
+  --color-brand-primary: var(--gold);
+  --color-brand-primary-strong: var(--gold-ink);
+  --color-brand-secondary: var(--coral);
+  --color-brand-secondary-strong: var(--coral);
+  --font-display: var(--serif);
+  --font-body: var(--sans);
 
   min-height: 100vh;
   background:
     radial-gradient(120% 65% at 84% -12%, rgba(230, 181, 74, 0.13), transparent 55%),
     radial-gradient(90% 55% at 4% 0%, rgba(239, 106, 91, 0.09), transparent 55%),
     radial-gradient(70% 40% at 50% 108%, rgba(114, 199, 166, 0.06), transparent 60%), var(--bg);
-  color: var(--cream);
+  color: var(--ink);
   font-family: var(--sans);
   font-size: var(--s0);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+}
+
+/* Header-only chrome for gameplay routes: the premium bar sits above the
+   still-Festival board. No full-page surface, and the bar isn't sticky here
+   (its parent is short) so it just scrolls with the immersive play screen. */
+.lp-bar {
+  min-height: 0;
+  background: none;
+  overflow: visible;
+}
+.lp-bar .site-nav {
+  position: static;
 }
 
 .lp h1,
@@ -70,7 +126,7 @@
   padding-inline: clamp(1.1rem, 4vw, 2.4rem);
 }
 .lp .muted {
-  color: var(--gray);
+  color: var(--ink-muted);
 }
 .lp .serif {
   font-family: var(--serif);
@@ -82,14 +138,14 @@
   color: var(--coral);
 }
 .lp .gold {
-  color: var(--gold);
+  color: var(--gold-ink);
 }
 .lp .eyebrow {
   font-size: 0.72rem;
   letter-spacing: 0.24em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-ink);
   display: inline-flex;
   align-items: center;
   gap: 0.6rem;
@@ -100,7 +156,7 @@
   display: flex;
   align-items: center;
   gap: 1.1rem;
-  color: var(--gold);
+  color: var(--gold-ink);
   margin-block: 0.4rem;
 }
 .lp .orn::before,
@@ -155,10 +211,10 @@
 .lp .btn-ghost {
   background: transparent;
   border-color: rgba(230, 181, 74, 0.55);
-  color: var(--cream);
+  color: var(--ink);
 }
 .lp .btn-ghost:hover {
-  border-color: var(--gold);
+  border-color: var(--gold-ink);
   background: rgba(230, 181, 74, 0.08);
 }
 .lp .btn-sm {
@@ -172,7 +228,7 @@
   top: 0;
   z-index: 30;
   backdrop-filter: blur(12px);
-  background: rgba(18, 23, 38, 0.74);
+  background: var(--nav-bg);
   border-bottom: 1px solid var(--hair);
 }
 .lp .site-nav .row {
@@ -215,20 +271,33 @@
   font-size: 0.92rem;
 }
 .lp .navlinks a {
-  color: var(--gray);
+  color: var(--ink-muted);
   transition: color 0.18s;
+  font-weight: 600;
 }
-.lp .navlinks a:hover {
-  color: var(--cream);
+.lp .navlinks a:hover,
+.lp .navlinks a.active {
+  color: var(--ink);
 }
-.lp .nav-cta {
-  margin-left: 0.4rem;
+.lp .nav-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-left: 0.9rem;
+}
+/* The reused app ThemeToggle (icon Button) — trim it to nav size. */
+.lp .nav-right .theme-toggle {
+  min-width: 0;
+  min-height: 0;
+  padding: 0.5rem;
+  font-size: 1rem;
+  line-height: 1;
 }
 @media (max-width: 760px) {
   .lp .navlinks {
     display: none;
   }
-  .lp .nav-cta {
+  .lp .nav-right {
     margin-left: auto;
   }
 }
@@ -267,7 +336,7 @@
   font-weight: 700;
 }
 .lp .hero h1 em {
-  color: var(--gold);
+  color: var(--gold-ink);
   font-style: normal;
 }
 .lp .hero h1 .knock {
@@ -275,13 +344,13 @@
   font-style: normal;
 }
 .lp .hero .sub {
-  color: var(--gray);
+  color: var(--ink-muted);
   max-width: 48ch;
   font-size: var(--s1);
   line-height: 1.5;
 }
 .lp .hero .sub b {
-  color: var(--cream);
+  color: var(--ink);
   font-weight: 600;
 }
 .lp .cta-row {
@@ -527,12 +596,12 @@
   font-family: var(--serif);
   font-size: clamp(2rem, 1.4rem + 2vw, 2.8rem);
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-ink);
   line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 .lp .stat-c .l {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.78rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -558,12 +627,12 @@
 }
 .lp .sec-head .k {
   margin-left: auto;
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.8rem;
   letter-spacing: 0.04em;
 }
 .lp .sec-sub {
-  color: var(--gray);
+  color: var(--ink-muted);
   margin-bottom: 1.6rem;
   max-width: 60ch;
 }
@@ -612,7 +681,7 @@
   display: grid;
   place-items: center;
   background: rgba(230, 181, 74, 0.12);
-  color: var(--gold);
+  color: var(--gold-ink);
   margin-bottom: 0.3rem;
 }
 .lp .feat .ficon svg {
@@ -625,11 +694,11 @@
   font-weight: 700;
 }
 .lp .feat p {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.92rem;
 }
 .lp .feat p b {
-  color: var(--cream);
+  color: var(--ink);
   font-weight: 600;
 }
 
@@ -670,15 +739,15 @@
   letter-spacing: 0.1em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-ink);
   margin-bottom: 0.1rem;
 }
 .lp .rival p {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.92rem;
 }
 .lp .rival .quote {
-  color: var(--cream);
+  color: var(--ink);
   font-style: italic;
   font-family: var(--serif);
   font-size: 1.02rem;
@@ -719,7 +788,7 @@
   letter-spacing: 0.13em;
   text-transform: uppercase;
   font-weight: 700;
-  color: var(--gold);
+  color: var(--gold-ink);
   background: rgba(230, 181, 74, 0.1);
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
@@ -736,14 +805,14 @@
   border-bottom: 0;
 }
 .lp .mode .stat .lab {
-  color: var(--gray);
+  color: var(--ink-muted);
 }
 .lp .mode .stat .val {
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 .lp .mode .desc {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.9rem;
   margin-top: 0.7rem;
   font-style: italic;
@@ -770,14 +839,14 @@
   }
 }
 .lp .board-cap {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.9rem;
   margin-top: 1.2rem;
   font-variant-numeric: tabular-nums;
   text-align: center;
 }
 .lp .board-cap b {
-  color: var(--cream);
+  color: var(--ink);
 }
 
 /* steps */
@@ -806,7 +875,7 @@
   font-family: var(--serif);
   font-weight: 700;
   font-size: 1.3rem;
-  color: var(--gold);
+  color: var(--gold-ink);
   background: var(--surface-2);
   border: 1px solid var(--hair);
 }
@@ -816,7 +885,7 @@
   margin-bottom: 0.15rem;
 }
 .lp .step p {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.9rem;
 }
 .lp .rules-point {
@@ -824,13 +893,13 @@
   margin-top: 1.9rem;
 }
 .lp .rules-point a {
-  color: var(--gold);
+  color: var(--gold-ink);
   font-weight: 700;
   border-bottom: 1px solid rgba(230, 181, 74, 0.4);
   padding-bottom: 1px;
 }
 .lp .rules-point a:hover {
-  border-color: var(--gold);
+  border-color: var(--gold-ink);
 }
 
 /* final cta */
@@ -855,7 +924,7 @@
   padding: clamp(1.8rem, 4vw, 3rem);
 }
 .lp .finalcta .kicker {
-  color: var(--gold);
+  color: var(--gold-ink);
   font-family: var(--serif);
   font-style: italic;
   font-size: 1.35rem;
@@ -893,14 +962,14 @@
   display: flex;
   gap: 1.2rem;
   flex-wrap: wrap;
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.9rem;
 }
 .lp .site-footer .flinks a:hover {
-  color: var(--cream);
+  color: var(--ink);
 }
 .lp .site-footer .fine {
-  color: var(--gray);
+  color: var(--ink-muted);
   font-size: 0.8rem;
   margin-top: 1.2rem;
   opacity: 0.85;
