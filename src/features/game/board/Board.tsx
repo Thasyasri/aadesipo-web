@@ -54,10 +54,14 @@ export const WALK_START_DELAY_MS = 720;
 const HOP_MS = 200;
 export const APPROX_MS_PER_TILE = HOP_MS;
 
-const BG_BASE = hexToPixiColor("#0F1222");
-const BG_SURFACE = hexToPixiColor("#1A1F35");
-const TEXT_PRIMARY = hexToPixiColor("#F4F5FA");
-const TEXT_MUTED = hexToPixiColor("#9AA3C4");
+// Premium navy board (D3a) — matches the app's --color-bg-* / text tokens so
+// the board reads as the same world as the surrounding UI. The board is a dark
+// focal object in both themes (like a physical board); the chrome around it
+// follows the light/dark toggle.
+const BG_BASE = hexToPixiColor("#121726");
+const BG_SURFACE = hexToPixiColor("#20273A");
+const TEXT_PRIMARY = hexToPixiColor("#F5EBD7");
+const TEXT_MUTED = hexToPixiColor("#8A92A5");
 const HOUSE_COLOR = hexToPixiColor(SEMANTIC_COLORS.success); // green — houses
 const HOTEL_COLOR = hexToPixiColor(SEMANTIC_COLORS.error); // red — hotel
 const ICON_STROKE = hexToPixiColor("#0B0E1A"); // near-black outline so icons read on any band
@@ -68,9 +72,9 @@ const BADGE_FILL = TEXT_PRIMARY;
 const BADGE_STROKE = BG_BASE;
 const BADGE_TEXT = hexToPixiColor("#141A33");
 
-// Center emblem palette (marigold + coral, per the app brand).
-const EMBLEM_MARIGOLD = hexToPixiColor("#FFB020");
-const EMBLEM_CORAL = hexToPixiColor("#FF5D5D");
+// Center emblem palette (premium gold + coral, per the app brand).
+const EMBLEM_MARIGOLD = hexToPixiColor("#E6B54A");
+const EMBLEM_CORAL = hexToPixiColor("#EF6A5B");
 const EMBLEM_INK = hexToPixiColor("#141A33");
 const DIE_FACE_5 = [
   [-0.26, -0.26],

@@ -35,9 +35,11 @@
   --radius-xl: 24px;
   --radius-pill: 999px;
 
-  /* Brand + semantic colors (identity — same across both themes) */
-  --color-brand-primary: #ffb020; /* marigold */
-  --color-brand-secondary: #ff5d5d; /* coral */
+  /* Brand + semantic colors (identity — same across both themes).
+     Contemporary Indian Premium (D3a): gold + coral, matching the marketing
+     site's tokens so the whole app reads as one product. */
+  --color-brand-primary: #e6b54a; /* premium gold */
+  --color-brand-secondary: #ef6a5b; /* premium coral */
   --color-accent-teal: #2dd4bf;
   --color-accent-violet: #8b7cf6;
 
@@ -50,8 +52,8 @@
      actually generates `text-brand-primary-strong` etc. at build time.
      The per-theme blocks override the runtime value; dark's default is
      set right here since it's identical to the base brand color. */
-  --color-brand-primary-strong: #ffb020;
-  --color-brand-secondary-strong: #ff5d5d;
+  --color-brand-primary-strong: #e6b54a;
+  --color-brand-secondary-strong: #ef6a5b;
 
   /* Player colors — 5, luminance-separated for colorblind accessibility */
   --color-player-1: #ffb020; /* marigold */
@@ -64,11 +66,11 @@
      [data-theme="light"] block below overrides these same custom
      property names, so every `bg-bg-base` / `text-text-primary` utility
      just works in both themes automatically. */
-  --color-bg-base: #0f1222;
-  --color-bg-surface: #1a1f35;
-  --color-bg-raised: #242b47;
-  --color-text-primary: #f4f5fa;
-  --color-text-secondary: #a3abc7;
+  --color-bg-base: #121726; /* premium navy canvas */
+  --color-bg-surface: #20273a; /* premium surface */
+  --color-bg-raised: #262f47;
+  --color-text-primary: #f5ebd7; /* cream ink */
+  --color-text-secondary: #8a92a5;
   --color-text-disabled: #5a6284;
 
   /* Elevation — dark theme leans on surface-color steps + soft glow,
@@ -81,18 +83,17 @@
 /* Light theme override. Same custom property names, new values —
    every component built on the tokens above needs zero changes. */
 [data-theme="light"] {
-  --color-bg-base: #f7f5f2; /* warm off-white, not clinical white */
-  --color-bg-surface: #ffffff;
-  --color-bg-raised: #ffffff;
-  --color-text-primary: #1a1f2e;
-  --color-text-secondary: #5b6478;
+  --color-bg-base: #f4efe3; /* warm ivory (premium light) */
+  --color-bg-surface: #fffdf8;
+  --color-bg-raised: #f2ebdb;
+  --color-text-primary: #1b2033;
+  --color-text-secondary: #6a7186;
   --color-text-disabled: #a0a6b8;
 
-  /* Deepened variants for when brand color is used as *text/icon*
-     foreground rather than a filled surface — the raw marigold/coral
-     fail contrast on a light background used that way. */
-  --color-brand-primary-strong: #b45309;
-  --color-brand-secondary-strong: #b91c1c;
+  /* Deepened gold/coral for when the brand colour is used as *text/icon*
+     foreground on the ivory ground (the raw fills fail contrast there). */
+  --color-brand-primary-strong: #a9761a;
+  --color-brand-secondary-strong: #c0392b;
 
   --shadow-e1: 0 1px 2px rgb(15 18 34 / 0.06);
   --shadow-e2: 0 4px 16px rgb(15 18 34 / 0.1);
