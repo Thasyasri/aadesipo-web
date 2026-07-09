@@ -303,14 +303,31 @@ const SEGMENTS: readonly Segment[] = [
     body: (
       <>
         <p>
-          You go to Jail by landing on <b>Go To Jail</b>, rolling <b>three doubles</b>, or drawing a
-          card that sends you.
+          You go to Jail by landing on <b>Go To Jail</b>, rolling <b>three doubles</b>, or drawing a{" "}
+          <b>Chance</b> or <b>Sarpanch Gari Dabba</b> card that sends you.
         </p>
         <p>
-          <b>Getting out:</b> pay <b>{formatRupees(JAIL_BAIL_COST)} bail</b>, roll doubles, use a
-          get-out-of-jail-free card, or serve your time — up to <b>{MAX_JAIL_TURNS} turns</b>, then
-          you pay and move. Landing on the Jail tile normally is <b>“Just visiting”</b> and costs
-          nothing.
+          <b>Leaving jail always costs {formatRupees(JAIL_BAIL_COST)} bail</b> — it makes no
+          difference how you got there.
+        </p>
+        <ul>
+          <li>
+            <b>Pay the bail</b> and walk straight out, then roll as normal.
+          </li>
+          <li>
+            <b>Roll doubles</b> to leave at once and move that roll — you <b>still pay the bail</b>.
+          </li>
+          <li>
+            <b>Serve your time</b> — up to <b>{MAX_JAIL_TURNS} turns</b>; on the last one you pay
+            the bail and move.
+          </li>
+          <li>
+            A <b>get-out-of-jail-free card</b> is the only way out without paying.
+          </li>
+        </ul>
+        <p>
+          Can’t cover the bail? You must raise the funds (mortgage or sell) — or go bankrupt.
+          Landing on the Jail tile normally is <b>“Just visiting”</b> and costs nothing.
         </p>
       </>
     ),

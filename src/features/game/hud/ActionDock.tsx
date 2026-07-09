@@ -122,6 +122,11 @@ export function ActionDock({
 
       {game.turnPhase === "awaiting-roll" && player.inJail && (
         <>
+          {/* Doubles gets you out at once but bail is still owed, so say so up
+              front rather than surprising the player after the roll. */}
+          <p className="basis-full text-center text-caption text-text-secondary">
+            {t("hud.jailBailNotice", { amount: formatRupees(JAIL_BAIL_COST) })}
+          </p>
           <Button
             variant="secondary"
             onClick={() => dispatch({ type: "PayBail", playerId: actingPlayerId })}

@@ -231,6 +231,22 @@ function handleRollDice(state: GameState, playerId: string): ActionResult {
 
   if (player.inJail) {
     if (roll.isDoubles) {
+      // House rule: leaving jail ALWAYS costs bail, however you got in (tile,
+      // three doubles, Chance or Sarpanch). Rolling doubles buys an immediate
+      // exit and move — not a free one. Only a get-out-of-jail-free card
+      // waives the fee (see handleUseJailFreeCard).
+      if (!canAfford(player, JAIL_BAIL_COST)) {
+        return enterDebtOrBankrupt(
+          next,
+          playerId,
+          JAIL_BAIL_COST,
+          null,
+          "jail-bail",
+          { diceSum },
+          events,
+        );
+      }
+      next = payToBank(next, playerId, JAIL_BAIL_COST);
       next = releaseFromJail(next, playerId);
       events.push({ type: "ReleasedFromJail", playerId, via: "doubles" });
       next = { ...next, doublesStreak: 0 };

@@ -140,23 +140,67 @@ describe("jail", () => {
     expect(found).toBe(true);
   });
 
-  it("releases a jailed player who rolls doubles", () => {
+  it("a jailed player who rolls doubles leaves at once — but still pays bail", () => {
     const base: GameState = {
       ...freshGame(),
       players: freshGame().players.map((p) =>
         p.id === "p1" ? { ...p, inJail: true, jailTurnsRemaining: 3, position: 10 } : p,
       ),
     };
+    const cashBefore = base.players.find((p) => p.id === "p1")!.cash;
 
     let found = false;
     for (let seed = 0; seed < 200 && !found; seed++) {
       const trial = { ...base, rng: createRngState(seed) };
       const result = applyAction(trial, { type: "RollDice", playerId: "p1" });
-      if (result.ok && result.events.some((e) => e.type === "ReleasedFromJail")) {
+      const released = result.ok
+        ? result.events.find(
+            (e): e is Extract<GameEvent, { type: "ReleasedFromJail" }> =>
+              e.type === "ReleasedFromJail",
+          )
+        : undefined;
+      if (result.ok && released) {
         found = true;
         const player = result.state.players.find((p) => p.id === "p1")!;
         expect(player.inJail).toBe(false);
+        expect(released.via).toBe("doubles");
+        // Bail is owed however you leave. The player then moves, so landing can
+        // cost more — never less.
+        expect(player.cash).toBeLessThanOrEqual(cashBefore - JAIL_BAIL_COST);
       }
+    }
+    expect(found).toBe(true);
+  });
+
+  it("a broke jailed player who rolls doubles owes the bail as a debt, not a free exit", () => {
+    // p1 holds one mortgageable property, so liquidation *could* cover the bail
+    // — which is what routes them into resolving-debt rather than bankruptcy.
+    const owned: PropertyOwnership = {
+      ownerId: "p1",
+      houses: 0,
+      hasHotel: false,
+      isMortgaged: false,
+    };
+    const base: GameState = {
+      ...freshGame(),
+      players: freshGame().players.map((p) =>
+        p.id === "p1" ? { ...p, inJail: true, jailTurnsRemaining: 3, position: 10, cash: 0 } : p,
+      ),
+      properties: { 1: owned },
+    };
+
+    let found = false;
+    for (let seed = 0; seed < 200 && !found; seed++) {
+      const trial = { ...base, rng: createRngState(seed) };
+      const result = applyAction(trial, { type: "RollDice", playerId: "p1" });
+      if (!result.ok) continue;
+      const dice = result.events.find((e) => e.type === "DiceRolled");
+      if (!dice || dice.type !== "DiceRolled" || dice.die1 !== dice.die2) continue;
+      found = true;
+      expect(result.events.some((e) => e.type === "ReleasedFromJail")).toBe(false);
+      expect(result.state.turnPhase).toBe("resolving-debt");
+      expect(result.state.pendingDebt?.reason).toBe("jail-bail");
+      expect(result.state.pendingDebt?.amount).toBe(JAIL_BAIL_COST);
     }
     expect(found).toBe(true);
   });

@@ -51,7 +51,11 @@ function describeEvent(event: GameEvent, t: TFunc, nameFor: NameFor): string | n
         });
       if (event.via === "card")
         return t("gameLog.releasedFromJailCard", { player: nameFor(event.playerId) });
-      return t("gameLog.releasedFromJail", { player: nameFor(event.playerId) });
+      // Doubles gets you out immediately, but bail is still owed.
+      return t("gameLog.releasedFromJail", {
+        player: nameFor(event.playerId),
+        amount: formatRupees(JAIL_BAIL_COST),
+      });
     case "PropertyPurchased":
       return t("gameLog.propertyPurchased", {
         player: nameFor(event.playerId),

@@ -39,13 +39,16 @@ export const en = {
     payBail: "Pay bail ({amount})",
     useJailFreeCard: "Use jail-free card",
     tryDoubles: "Try to roll doubles",
+    jailBailNotice: "Leaving jail costs {amount} — only a jail-free card waives it.",
   },
   gameLog: {
     diceRolled: "{player} rolled {die1} + {die2}",
     landed: "{player} landed on {tile}",
     passedGo: "{player} passed GO and collected {amount}",
-    sentToJail: "{player} was sent to jail",
-    releasedFromJail: "{player} rolled doubles and got out of jail",
+    // "got" (not "was") so the line stays grammatical when {player} is "You" —
+    // the human's display name in a vs-AI game ("You was sent to jail").
+    sentToJail: "{player} got sent to jail",
+    releasedFromJail: "{player} rolled doubles and paid {amount} bail to leave jail",
     releasedFromJailBail: "{player} paid {amount} bail and left jail",
     releasedFromJailCard: "{player} used a get-out-of-jail-free card",
     propertyPurchased: "{player} bought {property} for {amount}",

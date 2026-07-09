@@ -87,8 +87,13 @@ Currency note: the engine stores amounts in units of ₹1,000. The UI shows them
 
 ## 11. Jail
 
-- **You go to Jail** by: landing on **Go To Jail**, rolling **three doubles**, or a card that sends you.
-- **Getting out:** pay **₹50K bail**, **roll doubles**, use a **get-out-of-jail-free card**, or **serve your time** (up to **3 turns**, then you pay and move).
+- **You go to Jail** by: landing on **Go To Jail**, rolling **three doubles**, or a **Chance / Sarpanch Gari Dabba** card that sends you.
+- **Leaving jail always costs ₹50K bail** — however you got there.
+  - **Pay the bail** and walk out, then roll as normal.
+  - **Roll doubles** to leave at once and move that roll — you **still pay the bail**.
+  - **Serve your time** (up to **3 turns**; on the last one you pay the bail and move).
+  - A **get-out-of-jail-free card** is the only way out without paying.
+- Can't cover the bail? Raise the funds (mortgage / sell) — or go bankrupt.
 - **"Just visiting"** (landing on the Jail tile normally) costs nothing.
 
 ## 12. Taxes
