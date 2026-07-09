@@ -1,10 +1,20 @@
 User-agent: *
 Allow: /
-# App/dynamic routes have nothing to index
+
+# Live game / lobby routes — dynamic, nothing to index.
 Disallow: /game/
 Disallow: /online/
 Disallow: /room/
 Disallow: /join/
-Disallow: /gallery
+
+# Dev-only component showcase (NOT the public /gallery page).
+Disallow: /gallery-dev
+
+# Personal account area — no public content, and nothing we want indexed.
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /settings
+Disallow: /login
+Disallow: /reset
 
 Sitemap: https://aadesipo-web.vercel.app/sitemap.xml

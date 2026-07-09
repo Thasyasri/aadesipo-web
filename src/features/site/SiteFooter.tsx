@@ -21,6 +21,8 @@ export function SiteFooter() {
             <Link to="/leaderboards">Leaderboards</Link>
             <Link to="/profile">Profile</Link>
             <Link to="/settings">Settings</Link>
+            <Link to="/privacy">Privacy</Link>
+            <Link to="/terms">Terms</Link>
           </div>
         </div>
         <p className="fine">

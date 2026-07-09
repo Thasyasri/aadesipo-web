@@ -55,16 +55,20 @@ genuinely just one HTML file with embedded CSS and a Google Fonts link.
 
 ## Final pre-submission checklist
 
-- [ ] Real Supabase project deployed and smoke-tested (M8 README)
+- [x] Real Supabase project deployed and smoke-tested (M8 README) —
+      migrations 0001-0007 applied; sign-in, `profiles` update and the
+      `game_results` RLS insert all verified against the live project.
 - [ ] Real Sentry DSN + PostHog key set (M9/M11)
 - [ ] `docs/LEGAL_AND_CONTENT_REVIEW.md` — trademark review with an
       actual lawyer done, at minimum
 - [ ] `docs/BETA_LAUNCH_CHECKLIST.md` cohort run, crash-free rate and
       funnel data reviewed
-- [ ] Privacy policy and terms of service actually drafted (referenced
-      in both the marketing site footer and the Play Store listing,
-      not yet written anywhere in this repo — see the legal review doc)
-- [ ] `pnpm check:bundle` passing on the actual deployed build, not
-      just locally
+- [x] Privacy policy and terms of service actually drafted — live at
+      `/privacy` and `/terms`, linked from the site footer.
+      **Still to do:** set a real `CONTACT_EMAIL` in
+      `src/features/site/Legal.tsx`, and have both reviewed.
+- [x] `pnpm check:bundle` passing on the actual deployed build, not
+      just locally — deployed entry chunk measured at ~176 KB gzip
+      against the 200 KB budget.
 - [ ] Real Lighthouse audit run against the deployed URL (never
       verified in this environment — see the M11 summary)

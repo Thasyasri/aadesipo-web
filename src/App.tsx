@@ -9,6 +9,7 @@ import { Landing } from "@/features/site/Landing";
 import { Rules } from "@/features/site/Rules";
 import { About } from "@/features/site/About";
 import { Gallery } from "@/features/site/Gallery";
+import { Privacy, Terms } from "@/features/site/Legal";
 import { NotFound } from "@/features/site/NotFound";
 import { HomeScreen } from "@/features/home/HomeScreen";
 import { ProfileScreen } from "@/features/profile/ProfileScreen";
@@ -56,6 +57,8 @@ export default function App() {
                 <Route path="rules" element={<Rules />} />
                 <Route path="about" element={<About />} />
                 <Route path="gallery" element={<Gallery />} />
+                <Route path="privacy" element={<Privacy />} />
+                <Route path="terms" element={<Terms />} />
                 <Route path="play" element={<HomeScreen />} />
                 <Route path="profile" element={<ProfileScreen />} />
                 <Route path="dashboard" element={<DashboardScreen />} />
