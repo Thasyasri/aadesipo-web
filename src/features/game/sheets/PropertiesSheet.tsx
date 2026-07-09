@@ -16,7 +16,17 @@ import { tileNameWithCode } from "@/utils/tileCode";
 
 interface PropertiesSheetProps {
   game: GameState;
-  actingPlayerId: string;
+  /** THE LOCAL VIEWER'S seat — whose portfolio this device may see and manage.
+   *  Emphatically NOT the acting player. Passing the acting player here meant
+   *  that, online, whoever's turn it was had their holdings rendered to EVERY
+   *  player, complete with a live "Sell building" button on their houses (the
+   *  server rejected the action, but it should never have been offered). The
+   *  same flaw exposed the AI's portfolio in a vs-AI game. */
+  playerId: string;
+  /** Whether this viewer may act right now — it's their turn and this device
+   *  controls that seat. Looking at your own properties is always allowed;
+   *  building, selling and mortgaging are not. */
+  canAct: boolean;
   open: boolean;
   onClose: () => void;
   dispatch: (action: Action) => void;
@@ -26,13 +36,14 @@ interface PropertiesSheetProps {
 
 export function PropertiesSheet({
   game,
-  actingPlayerId,
+  playerId,
+  canAct,
   open,
   onClose,
   dispatch,
   onInspect,
 }: PropertiesSheetProps) {
-  const owned = propertiesOwnedBy(game, actingPlayerId);
+  const owned = propertiesOwnedBy(game, playerId);
   const supply = game.buildingSupply;
 
   return (
@@ -44,7 +55,7 @@ export function PropertiesSheet({
           {supply.hotels === 1 ? "hotel" : "hotels"} left
         </p>
       )}
-      <LoanSection game={game} actingPlayerId={actingPlayerId} dispatch={dispatch} />
+      <LoanSection game={game} playerId={playerId} canAct={canAct} dispatch={dispatch} />
       {owned.length === 0 ? (
         <p className="text-body text-text-secondary">You don't own any properties yet.</p>
       ) : (
@@ -65,11 +76,12 @@ export function PropertiesSheet({
                 ? supply.hotels < 1
                 : supply.houses < 1
               : false;
-            const unevenBuild = !canBuildEvenly(game, actingPlayerId, position);
-            const canBuild = tile.type === "property" && !mortgaged && !outOfStock && !unevenBuild;
+            const unevenBuild = !canBuildEvenly(game, playerId, position);
+            const canBuild =
+              canAct && tile.type === "property" && !mortgaged && !outOfStock && !unevenBuild;
             const hasBuildings = houses > 0 || ownership?.hasHotel;
             const canSell =
-              tile.type === "property" && canSellEvenly(game, actingPlayerId, position);
+              canAct && tile.type === "property" && canSellEvenly(game, playerId, position);
             // Why a build/sell control is unavailable — shown as a caption so a
             // disabled button never reads as a broken control.
             const buildBlockedReason =
@@ -121,9 +133,7 @@ export function PropertiesSheet({
                       variant="secondary"
                       className="w-full !min-w-0 !px-2 !py-2 !text-body"
                       disabled={!canBuild}
-                      onClick={() =>
-                        dispatch({ type: "BuildHouse", playerId: actingPlayerId, position })
-                      }
+                      onClick={() => dispatch({ type: "BuildHouse", playerId: playerId, position })}
                     >
                       Build {buildingHotel ? "hotel" : "house"} ({formatRupees(tile.buildingCost)})
                     </Button>
@@ -133,9 +143,7 @@ export function PropertiesSheet({
                       variant="secondary"
                       className="w-full !min-w-0 !px-2 !py-2 !text-body"
                       disabled={!canSell}
-                      onClick={() =>
-                        dispatch({ type: "SellHouse", playerId: actingPlayerId, position })
-                      }
+                      onClick={() => dispatch({ type: "SellHouse", playerId: playerId, position })}
                     >
                       Sell building
                     </Button>
@@ -146,9 +154,9 @@ export function PropertiesSheet({
                       className={`w-full !min-w-0 !px-2 !py-2 !text-body ${
                         tile.type !== "property" ? "col-span-2" : ""
                       }`}
-                      disabled={!!hasBuildings}
+                      disabled={!canAct || !!hasBuildings}
                       onClick={() =>
-                        dispatch({ type: "MortgageProperty", playerId: actingPlayerId, position })
+                        dispatch({ type: "MortgageProperty", playerId: playerId, position })
                       }
                     >
                       Mortgage (+{formatRupees(tile.mortgageValue)})
@@ -157,10 +165,11 @@ export function PropertiesSheet({
                     <Button
                       variant="secondary"
                       className="col-span-2 w-full !min-w-0 !px-2 !py-2 !text-body"
+                      disabled={!canAct}
                       onClick={() =>
                         dispatch({
                           type: "UnmortgageProperty",
-                          playerId: actingPlayerId,
+                          playerId: playerId,
                           position,
                         })
                       }
@@ -172,8 +181,9 @@ export function PropertiesSheet({
                     <Button
                       variant="tertiary"
                       className="col-span-2 w-full !min-w-0 !px-2 !py-2 !text-body"
+                      disabled={!canAct}
                       onClick={() =>
-                        dispatch({ type: "SellProperty", playerId: actingPlayerId, position })
+                        dispatch({ type: "SellProperty", playerId: playerId, position })
                       }
                     >
                       Sell to highest bidder (auction)
@@ -241,18 +251,22 @@ function StatusBadge({
  */
 function LoanSection({
   game,
-  actingPlayerId,
+  playerId,
+  canAct,
   dispatch,
 }: {
   game: GameState;
-  actingPlayerId: string;
+  playerId: string;
+  /** Borrowing/repaying is a turn action — always viewable, only actionable on
+   *  your own turn, from the device that controls the seat. */
+  canAct: boolean;
   dispatch: (action: Action) => void;
 }) {
-  const player = game.players.find((p) => p.id === actingPlayerId);
+  const player = game.players.find((p) => p.id === playerId);
   if (!player) return null;
 
   const loan = player.loan;
-  const cap = loanCap(game, actingPlayerId);
+  const cap = loanCap(game, playerId);
 
   if (!loan && cap <= 0) return null;
 
@@ -271,11 +285,11 @@ function LoanSection({
           </p>
           <Button
             variant="secondary"
-            disabled={player.cash <= 0}
+            disabled={!canAct || player.cash <= 0}
             onClick={() =>
               dispatch({
                 type: "RepayLoan",
-                playerId: actingPlayerId,
+                playerId: playerId,
                 amount: Math.min(player.cash, loan.owed),
               })
             }
@@ -290,7 +304,8 @@ function LoanSection({
           </p>
           <Button
             variant="secondary"
-            onClick={() => dispatch({ type: "TakeLoan", playerId: actingPlayerId, amount: cap })}
+            disabled={!canAct}
+            onClick={() => dispatch({ type: "TakeLoan", playerId: playerId, amount: cap })}
           >
             Borrow {formatRupees(cap)}
           </Button>
