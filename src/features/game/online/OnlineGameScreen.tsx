@@ -3,7 +3,12 @@ import { useNavigate, useParams } from "react-router";
 import { getActingPlayerId, type Action } from "@aadesipo/engine";
 import { useSession } from "@/state/session";
 import { useOnlineGameView } from "@/multiplayer/onlineGameStore";
-import { fetchActiveGameForRoom, fetchRoomSeats, fetchRoomInfo } from "@/multiplayer/onlineClient";
+import {
+  fetchActiveGameForRoom,
+  fetchRoomSeats,
+  fetchRoomInfo,
+  fetchProfiles,
+} from "@/multiplayer/onlineClient";
 import { Board } from "../board/Board";
 import { PlayerStrip } from "../hud/PlayerStrip";
 import { ActionDock } from "../hud/ActionDock";
@@ -33,6 +38,7 @@ export function OnlineGameScreen() {
   const eventLog = useOnlineGameView((s) => s.eventLog);
   const lastError = useOnlineGameView((s) => s.lastError);
   const connect = useOnlineGameView((s) => s.connect);
+  const resyncNow = useOnlineGameView((s) => s.resyncNow);
   const dispatchAsync = useOnlineGameView((s) => s.dispatch);
   const navigate = useNavigate();
   // The rest of the game UI dispatches synchronously; online sends over the
@@ -50,6 +56,7 @@ export function OnlineGameScreen() {
   // GameScreen for the same treatment). Replaces a timer that only *guessed*
   // the walk duration and drifted out of step with the real animation.
   const [animating, setAnimating] = useState(false);
+  const [names, setNames] = useState<Record<string, string>>({});
   const attempted = useRef<string | null>(null);
 
   useEffect(() => {
@@ -82,6 +89,44 @@ export function OnlineGameScreen() {
     })();
   }, [roomId, user, storeRoomId, connect]);
 
+  // Real names for the board, player strip and activity log. Without this the
+  // log reads "Player 2 rolled 3 + 4" for everyone but you.
+  useEffect(() => {
+    if (playerIds.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const profiles = await fetchProfiles(playerIds);
+        if (cancelled) return;
+        const resolved: Record<string, string> = {};
+        for (const [id, profile] of Object.entries(profiles)) {
+          if (profile.displayName) resolved[id] = profile.displayName;
+        }
+        setNames(resolved);
+      } catch {
+        // Names are cosmetic — a failure here just leaves the seat fallbacks.
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [playerIds]);
+
+  // A realtime message dropped while the tab was hidden (or the socket was
+  // asleep) would otherwise leave this client silently a move behind, with no
+  // way back: `handleRemoteAction` only resyncs when a *later* message arrives.
+  useEffect(() => {
+    const onVisible = () => {
+      if (document.visibilityState === "visible") void resyncNow();
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    window.addEventListener("online", onVisible);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisible);
+      window.removeEventListener("online", onVisible);
+    };
+  }, [resyncNow]);
+
   if (connecting || (!game && !connectError)) {
     return (
       <div className="mx-auto max-w-md p-6">
@@ -112,7 +157,7 @@ export function OnlineGameScreen() {
 
   const displaySetups: PlayerSetup[] = playerIds.map((id, i) => ({
     id,
-    displayName: id === user.id ? "You" : `Player ${i + 1}`,
+    displayName: id === user.id ? "You" : (names[id] ?? `Player ${i + 1}`),
   }));
 
   // Online: this device controls exactly the signed-in user's seat.

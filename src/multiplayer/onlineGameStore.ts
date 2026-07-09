@@ -34,6 +34,9 @@ interface OnlineGameViewState {
   eventLog: readonly GameEvent[];
   lastError: string | null;
   connected: boolean;
+  /** How many of OUR actions have been applied optimistically but not yet seen
+   *  coming back over realtime. Used to recognise our own echo. */
+  pendingLocal: number;
 
   connect: (
     roomId: string,
@@ -46,6 +49,16 @@ interface OnlineGameViewState {
   ) => Promise<void>;
   disconnect: () => void;
   dispatch: (action: Action) => Promise<void>;
+  /** Re-read the whole action log and rebuild. Safe to call any time; used when
+   *  the tab regains focus, since a realtime message dropped while hidden would
+   *  otherwise leave this client silently stuck a move behind. */
+  resyncNow: () => Promise<void>;
+}
+
+/** Who is the author of an action — mirrors the server's actorIdForAction, and
+ *  is what `validate-action` matches against the authenticated user. */
+function actorOf(action: Action): string {
+  return action.type === "ProposeTrade" ? action.proposerId : action.playerId;
 }
 
 let unsubscribeRealtime: (() => void) | null = null;
@@ -86,6 +99,7 @@ export const useOnlineGameView = create<OnlineGameViewState>((set, get) => ({
   eventLog: [],
   lastError: null,
   connected: false,
+  pendingLocal: 0,
 
   connect: async (roomId, gameId, seed, playerIds, myUserId, mode, houseRules) => {
     get().disconnect();
@@ -111,6 +125,7 @@ export const useOnlineGameView = create<OnlineGameViewState>((set, get) => ({
       eventLog: replayed.eventLog,
       lastError: null,
       connected: true,
+      pendingLocal: 0,
     });
 
     unsubscribeRealtime = subscribeToGameActions(gameId, (remote: RemoteAction) => {
@@ -127,24 +142,40 @@ export const useOnlineGameView = create<OnlineGameViewState>((set, get) => ({
   },
 
   dispatch: async (action) => {
-    const { confirmedState, gameId } = get();
+    const { confirmedState, game, gameId } = get();
     if (!confirmedState || !gameId) return;
 
-    const optimistic = applyAction(confirmedState, action);
+    // Chain optimism on the LATEST optimistic view, not the last confirmed one.
+    // Two quick local actions (buy, then end turn) used to both be applied to
+    // the pre-buy board, so the second either bounced or produced a bogus
+    // intermediate view until the echoes arrived.
+    const optimistic = applyAction(game ?? confirmedState, action);
     if (optimistic.ok) {
-      set({ game: optimistic.state, recentEvents: optimistic.events });
+      set({
+        game: optimistic.state,
+        recentEvents: optimistic.events,
+        pendingLocal: get().pendingLocal + 1,
+      });
     }
 
     const result = await submitAction(gameId, action);
     if (!result.ok) {
+      // Drop every optimistic assumption and let the echoes rebuild. Clearing
+      // recentEvents also stops the board animating a move that never happened.
       set({
         game: get().confirmedState,
+        recentEvents: [],
+        pendingLocal: 0,
         lastError: result.reason ?? result.error ?? "Action rejected",
       });
     }
     // On success we deliberately don't touch state here — the realtime
     // echo (handleRemoteAction) is what actually confirms it, so there's
     // exactly one code path that ever advances confirmedState.
+  },
+
+  resyncNow: async () => {
+    await resync(set, get);
   },
 }));
 
@@ -153,7 +184,7 @@ function handleRemoteAction(
   get: () => OnlineGameViewState,
   remote: RemoteAction,
 ): void {
-  const { confirmedState, confirmedSeq, gameId, eventLog } = get();
+  const { confirmedState, confirmedSeq, gameId, eventLog, myUserId, pendingLocal } = get();
   if (!confirmedState || !gameId) return;
 
   if (remote.seq <= confirmedSeq) return;
@@ -170,13 +201,23 @@ function handleRemoteAction(
     return;
   }
 
+  // Our own action coming back. We already animated it optimistically, so keep
+  // the EXISTING recentEvents array: handing the board a fresh (if identical)
+  // array would re-fire its walk effect — restarting the pawn from the tile it
+  // set off from. Confirmed state and the activity log still advance here.
+  const isOwnEcho = pendingLocal > 0 && myUserId !== null && actorOf(remote.action) === myUserId;
+
   set({
     confirmedState: result.state,
     confirmedSeq: remote.seq,
     game: result.state,
-    recentEvents: result.events,
+    ...(isOwnEcho ? {} : { recentEvents: result.events }),
     eventLog: [...eventLog, ...result.events],
     lastError: null,
+    // A rival's action rewound `game` to the confirmed line, so anything we'd
+    // applied optimistically is gone — its echo is no longer a duplicate of
+    // what's on screen and must be replayed like any other action.
+    pendingLocal: isOwnEcho ? pendingLocal - 1 : 0,
   });
 }
 
@@ -199,5 +240,7 @@ async function resync(
     game: replayed.state,
     eventLog: replayed.eventLog,
     lastError: null,
+    // The log is the truth now; nothing local is still "pending".
+    pendingLocal: 0,
   });
 }
