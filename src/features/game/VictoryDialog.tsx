@@ -30,20 +30,34 @@ export function VictoryDialog({
   localPlayerId,
   onPlayAgain,
 }: VictoryDialogProps) {
-  const open = game.turnPhase === "game-over" && game.winnerId !== null;
+  const isOver = game.turnPhase === "game-over" && game.winnerId !== null;
+  // Dismissing the dialog (Escape / backdrop) must NOT start a new game — it
+  // just tucks it away so the player can study the final board. "Play again" is
+  // the only thing that starts one. `open` is derived from game state, so this
+  // local flag is what actually hides it.
+  const [dismissed, setDismissed] = useState(false);
+  const open = isOver && !dismissed;
   const [shareCardUrl, setShareCardUrl] = useState<string | null>(null);
-  const reported = useRef(false);
+  // Report once PER GAME, not once per mount: "Play again" navigates to a new
+  // game id without remounting this component, so a boolean ref would silently
+  // skip recording every game after the first.
+  const reportedFor = useRef<string | null>(null);
   const { reduceMotion } = useMotionPrefs();
 
+  // A fresh game (or an undo back into play) re-arms the dialog.
   useEffect(() => {
-    if (!open) return;
+    if (!isOver) setDismissed(false);
+  }, [isOver]);
+
+  useEffect(() => {
+    if (!isOver) return;
     if (!reduceMotion) {
       void confetti({ particleCount: 150, spread: 80, origin: { y: 0.6 } });
     }
     setShareCardUrl(generateShareCard(game, players));
 
-    if (!reported.current) {
-      reported.current = true;
+    if (gameId && reportedFor.current !== gameId) {
+      reportedFor.current = gameId;
       const reason =
         game.players.filter((p) => !p.isBankrupt).length === 1
           ? "last-player-standing"
@@ -51,12 +65,12 @@ export function VictoryDialog({
       analyticsEvents.gameCompleted(mode, reason, game.players.length);
       // Record a personal result where there's a single clear "you" (vs-AI or
       // online). Pass-and-play is a shared device, so it's skipped.
-      if (gameId && localPlayerId && (mode === "vs-ai" || mode === "online")) {
+      if (localPlayerId && (mode === "vs-ai" || mode === "online")) {
         void recordGameResult({ gameId, game, source: mode, localPlayerId });
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+  }, [isOver, gameId]);
 
   if (!open || !game.winnerId) return null;
 
@@ -64,7 +78,7 @@ export function VictoryDialog({
   const ranked = [...game.players].sort((a, b) => netWorth(game, b.id) - netWorth(game, a.id));
 
   return (
-    <Dialog open={open} onClose={onPlayAgain} title="Game over!">
+    <Dialog open={open} onClose={() => setDismissed(true)} title="Game over!">
       <p className="mb-4 text-body-lg font-semibold text-brand-primary-strong">
         {winnerSetup?.displayName ?? game.winnerId} wins! 🎉
       </p>
