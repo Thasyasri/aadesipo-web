@@ -18,6 +18,7 @@ import {
   buildAiOpponents,
   buildPassAndPlayPlayers,
   aiDisplayNamesFor,
+  AI_DISPLAY_NAMES,
   AI_PERSONALITY_LABEL,
   AI_DIFFICULTY_SKILL,
   type AiDifficulty,
@@ -26,7 +27,11 @@ import { createRoom, joinRoom } from "@/multiplayer/onlineClient";
 import { isSupabaseConfigured } from "@/services/supabase";
 import { analyticsEvents } from "@/services/analytics";
 
+// Only the DEFAULT line-up when you change the opponent count — every seat is
+// then freely re-pickable, so a 1-on-1 against Dev no longer forces Ayush.
 const PERSONALITY_ROTATION: readonly PersonalityId[] = ["gambler", "troll", "miser", "gambler"];
+// Every rival you can face. Order is the pick order shown per seat.
+const PERSONALITY_CHOICES: readonly PersonalityId[] = ["gambler", "troll", "miser"];
 // Player-facing character name (from the shared map) plus a play-style
 // emoji hint. Names come from AI_DISPLAY_NAMES so setup and in-game match.
 const PERSONALITY_EMOJI: Record<PersonalityId, string> = {
@@ -55,7 +60,11 @@ export function NewGameSetup() {
   const [joinCode, setJoinCode] = useState("");
   const [houseRules, setHouseRules] = useState<HouseRules>(DEFAULT_HOUSE_RULES);
   const [gameMode, setGameMode] = useState<ModeConfig>(CLASSIC_MODE);
-  // One difficulty per AI seat, so you can mix (e.g. an Easy + an Expert).
+  // One rival AND one difficulty per AI seat, both freely chosen — so you can
+  // play 1-on-1 against Dev on Expert if that's the game you want.
+  const [opponents, setOpponents] = useState<PersonalityId[]>(() => [
+    ...PERSONALITY_ROTATION.slice(0, 2),
+  ]);
   const [difficulties, setDifficulties] = useState<AiDifficulty[]>([
     DEFAULT_DIFFICULTY,
     DEFAULT_DIFFICULTY,
@@ -65,19 +74,25 @@ export function NewGameSetup() {
   const startGame = useGameView((s) => s.startGame);
   const { showToast } = useToast();
 
-  const opponents = PERSONALITY_ROTATION.slice(0, aiCount);
   const opponentNames = aiDisplayNamesFor(opponents);
 
-  // Changing the AI count resizes the per-seat difficulty list, keeping the
-  // seats you already tuned and defaulting any new ones.
+  // Changing the AI count resizes BOTH per-seat lists, keeping the seats you
+  // already tuned and defaulting any new ones from the rotation.
   const changeAiCount = (n: number) => {
     setAiCount(n);
+    setOpponents((prev) => {
+      const next = prev.slice(0, n);
+      while (next.length < n) next.push(PERSONALITY_ROTATION[next.length] ?? "gambler");
+      return next;
+    });
     setDifficulties((prev) => {
       const next = prev.slice(0, n);
       while (next.length < n) next.push(DEFAULT_DIFFICULTY);
       return next;
     });
   };
+  const setOpponentAt = (i: number, id: PersonalityId) =>
+    setOpponents((prev) => prev.map((x, idx) => (idx === i ? id : x)));
   const setDifficultyAt = (i: number, d: AiDifficulty) =>
     setDifficulties((prev) => prev.map((x, idx) => (idx === i ? d : x)));
 
@@ -309,15 +324,43 @@ export function NewGameSetup() {
           <div className="mb-6 flex flex-col gap-2">
             {opponents.map((id, i) => (
               <div key={i} className="rounded-md border border-bg-raised bg-bg-base p-3">
-                <div className="mb-2 flex items-center gap-2">
-                  <span aria-hidden="true">{PERSONALITY_EMOJI[id]}</span>
-                  <span className="text-body font-semibold text-text-primary">
-                    {opponentNames[i]}
-                  </span>
-                  <span className="text-caption text-text-secondary">
-                    · {AI_PERSONALITY_LABEL[id]}
-                  </span>
+                <p className="mb-2 text-caption font-semibold text-text-secondary">
+                  Opponent {i + 1}
+                </p>
+
+                {/* Pick WHO you face. */}
+                <div
+                  className="mb-2 flex gap-2 overflow-x-auto pb-1"
+                  role="group"
+                  aria-label={`Opponent ${i + 1} rival`}
+                >
+                  {PERSONALITY_CHOICES.map((pid) => {
+                    const on = id === pid;
+                    return (
+                      <button
+                        key={pid}
+                        type="button"
+                        aria-pressed={on}
+                        onClick={() => setOpponentAt(i, pid)}
+                        className={`shrink-0 rounded-pill border px-3 py-1 text-caption font-semibold transition-colors ${
+                          on
+                            ? "border-brand-primary bg-brand-primary text-bg-base"
+                            : "border-bg-raised bg-bg-base text-text-secondary"
+                        }`}
+                      >
+                        <span aria-hidden="true">{PERSONALITY_EMOJI[pid]}</span>{" "}
+                        {AI_DISPLAY_NAMES[pid]}
+                      </button>
+                    );
+                  })}
                 </div>
+
+                <p className="mb-2 text-caption text-text-secondary">
+                  <span className="font-semibold text-text-primary">{opponentNames[i]}</span> ·{" "}
+                  {AI_PERSONALITY_LABEL[id]}
+                </p>
+
+                {/* Pick HOW HARD they play. */}
                 <div
                   className="flex gap-2 overflow-x-auto pb-1"
                   role="group"
