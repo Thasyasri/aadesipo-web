@@ -24,6 +24,15 @@ import { withCors } from "../_shared/cors.ts";
  *  Long enough to survive a reload, a tunnel, or a slow phone waking up. */
 const STALL_THRESHOLD_MS = 60_000;
 
+/**
+ * A player with NO presence row has never checked in — which is also true of
+ * someone who simply hasn't finished loading the game screen yet, or is still
+ * on the lobby. Absence of evidence is not evidence of absence, so they get a
+ * far longer grace, measured from the last thing that actually happened in the
+ * game rather than from a heartbeat they never sent.
+ */
+const NEVER_SEEN_GRACE_MS = 180_000;
+
 Deno.serve(
   withCors(async (req: Request) => {
     const authHeader = req.headers.get("Authorization");
@@ -54,7 +63,7 @@ Deno.serve(
 
     const { data: game, error: gameError } = await supabase
       .from("games")
-      .select("id, room_id, seed, status")
+      .select("id, room_id, seed, status, started_at")
       .eq("id", gameId)
       .single();
     if (gameError || !game) {
@@ -92,7 +101,7 @@ Deno.serve(
 
     const { data: pastActions, error: actionsError } = await supabase
       .from("game_actions")
-      .select("payload")
+      .select("payload, created_at")
       .eq("game_id", gameId)
       .order("seq", { ascending: true });
     if (actionsError) {
@@ -121,6 +130,8 @@ Deno.serve(
     }
 
     // The whole authorisation for acting as someone else: they really are gone.
+    // Checked here, against the server's own clock — a caller with a fast clock
+    // must never be able to skip a present player's turn.
     const { data: presence } = await supabase
       .from("room_presence")
       .select("last_seen_at")
@@ -128,14 +139,27 @@ Deno.serve(
       .eq("user_id", stalledId)
       .maybeSingle();
 
-    // No presence row at all means they never heartbeat — treat as absent, since
-    // a connected client writes one on join. A fresh row means they're here.
-    const lastSeen = presence?.last_seen_at ? Date.parse(presence.last_seen_at) : 0;
-    const idleMs = Date.now() - lastSeen;
-    if (idleMs < STALL_THRESHOLD_MS) {
-      return new Response(JSON.stringify({ error: "That player is still connected", idleMs }), {
-        status: 409,
-      });
+    const now = Date.now();
+    if (presence?.last_seen_at) {
+      const idleMs = now - Date.parse(presence.last_seen_at);
+      if (idleMs < STALL_THRESHOLD_MS) {
+        return new Response(JSON.stringify({ error: "That player is still connected", idleMs }), {
+          status: 409,
+        });
+      }
+    } else {
+      // Never heartbeated. That's someone who left before this feature shipped —
+      // or someone whose game screen is still loading. Measure from the last
+      // thing that happened in the game instead, and be generous about it.
+      const lastAction = pastActions?.[pastActions.length - 1];
+      const lastActivity = Date.parse(lastAction?.created_at ?? game.started_at);
+      const quietMs = now - lastActivity;
+      if (quietMs < NEVER_SEEN_GRACE_MS) {
+        return new Response(
+          JSON.stringify({ error: "That player may still be joining", quietMs }),
+          { status: 409 },
+        );
+      }
     }
 
     const seq = pastActions?.length ?? 0;

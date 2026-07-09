@@ -154,6 +154,14 @@ export interface RemoteAction {
 export function subscribeToGameActions(
   gameId: string,
   onAction: (remote: RemoteAction) => void,
+  /**
+   * Called every time the channel (re)reaches SUBSCRIBED, including after
+   * supabase-js silently rejoins a dropped socket. postgres_changes has no
+   * replay: anything inserted while we were disconnected is simply never
+   * delivered. So the only safe assumption on (re)subscribe is that we may have
+   * missed something — the store resyncs from the action log.
+   */
+  onSubscribed?: () => void,
 ): () => void {
   const client = requireSupabase();
   const channel = client
@@ -171,7 +179,9 @@ export function subscribeToGameActions(
         onAction({ seq: row.seq, action: row.payload });
       },
     )
-    .subscribe();
+    .subscribe((status) => {
+      if (status === "SUBSCRIBED") onSubscribed?.();
+    });
 
   return () => {
     void client.removeChannel(channel);

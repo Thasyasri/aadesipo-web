@@ -10,6 +10,10 @@ const POLL_MS = 15_000;
  *  takeover — the server re-checks against its own clock before acting, so
  *  clock skew here can produce a useless button, never a skipped turn. */
 const STALL_AFTER_MS = 60_000;
+/** A player with no presence row hasn't necessarily left: they may just be
+ *  loading. Time them from when WE started waiting, and wait longer. Mirrors
+ *  advance-turn's NEVER_SEEN_GRACE_MS. */
+const NEVER_SEEN_GRACE_MS = 180_000;
 
 interface TurnPresence {
   /** True when the acting player has gone quiet long enough to take over. */
@@ -19,6 +23,14 @@ interface TurnPresence {
   takeOver: () => void;
   takingOver: boolean;
   error: string | null;
+}
+
+/** What we know about the acting player's presence right now. `sinceMs` is how
+ *  long they've been quiet; `everSeen` says whether that number came from a real
+ *  heartbeat or merely from how long we've been waiting. */
+interface Idle {
+  sinceMs: number;
+  everSeen: boolean;
 }
 
 /**
@@ -38,9 +50,12 @@ export function useTurnPresence(
   actingPlayerId: string,
   isMyTurn: boolean,
 ): TurnPresence {
-  const [idleMs, setIdleMs] = useState<number | null>(null);
+  const [idle, setIdle] = useState<Idle | null>(null);
   const [takingOver, setTakingOver] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** When this player's turn started, as far as this client can tell. Used as
+   *  the clock for someone who has never sent a heartbeat. */
+  const watchingSince = useRef(Date.now());
 
   // Heartbeat, for as long as we're on this screen.
   useEffect(() => {
@@ -67,7 +82,7 @@ export function useTurnPresence(
   const watching = roomId !== null && actingPlayerId !== "" && !isMyTurn;
   useEffect(() => {
     if (!watching || !roomId) {
-      setIdleMs(null);
+      setIdle(null);
       return;
     }
     let cancelled = false;
@@ -76,7 +91,13 @@ export function useTurnPresence(
         const seen = await fetchPresence(roomId);
         if (cancelled) return;
         const lastSeen = seen[actingPlayerId];
-        setIdleMs(lastSeen === undefined ? Infinity : Date.now() - lastSeen);
+        setIdle(
+          lastSeen === undefined
+            ? // No heartbeat ever. They might be mid-load rather than gone, so
+              // time them from when their turn started, not from the epoch.
+              { sinceMs: Date.now() - watchingSince.current, everSeen: false }
+            : { sinceMs: Date.now() - lastSeen, everSeen: true },
+        );
       } catch {
         // A failed poll just means we don't offer the takeover this round.
       }
@@ -90,11 +111,12 @@ export function useTurnPresence(
   }, [watching, roomId, actingPlayerId]);
 
   // Reset the moment the turn moves on, so a fresh acting player never inherits
-  // the previous one's idle time.
+  // the previous one's idle time — nor their head start on the never-seen clock.
   const lastActing = useRef(actingPlayerId);
   if (lastActing.current !== actingPlayerId) {
     lastActing.current = actingPlayerId;
-    if (idleMs !== null) setIdleMs(null);
+    watchingSince.current = Date.now();
+    if (idle !== null) setIdle(null);
     if (error !== null) setError(null);
   }
 
@@ -103,16 +125,17 @@ export function useTurnPresence(
     setTakingOver(true);
     setError(null);
     void advanceStalledTurn(gameId)
-      .then(() => setIdleMs(null))
+      .then(() => setIdle(null))
       .catch((err: Error) => setError(err.message))
       .finally(() => setTakingOver(false));
   }, [gameId, takingOver]);
 
-  const stalled = watching && idleMs !== null && idleMs >= STALL_AFTER_MS;
+  const threshold = idle?.everSeen ? STALL_AFTER_MS : NEVER_SEEN_GRACE_MS;
+  const stalled = watching && idle !== null && idle.sinceMs >= threshold;
 
   return {
     stalled,
-    idleSeconds: idleMs === null || !Number.isFinite(idleMs) ? null : Math.round(idleMs / 1000),
+    idleSeconds: idle === null ? null : Math.round(idle.sinceMs / 1000),
     takeOver,
     takingOver,
     error,

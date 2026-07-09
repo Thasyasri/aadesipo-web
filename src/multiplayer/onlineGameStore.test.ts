@@ -21,18 +21,28 @@ const fetchAllMock = vi.mocked(fetchAllActions);
 
 /** The realtime callback the store handed to subscribeToGameActions. */
 let emit: (remote: RemoteAction) => void;
+/** The channel-status callback — fires again whenever a dropped socket rejoins. */
+let emitSubscribed: () => void;
 
 const roll = (playerId: string): Action => ({ type: "RollDice", playerId });
 
-async function connectFresh(pastActions: RemoteAction[] = []) {
+/**
+ * @param me Which seat this client owns. Defaults to u1, who acts first. Pass
+ *   "u2" to make u1's actions genuinely belong to a RIVAL — otherwise a test
+ *   that emits `roll("u1")` is emitting the local player's own action, and any
+ *   assertion about rival handling passes for the wrong reason.
+ */
+async function connectFresh(pastActions: RemoteAction[] = [], me: string = ME) {
   fetchAllMock.mockResolvedValue(pastActions);
-  subscribeMock.mockImplementation((_gameId, handler) => {
+  subscribeMock.mockImplementation((_gameId, handler, onSubscribed) => {
     emit = handler;
+    emitSubscribed = () => onSubscribed?.();
+    onSubscribed?.(); // the real channel reaches SUBSCRIBED right after connect
     return () => {};
   });
   await useOnlineGameView
     .getState()
-    .connect("room-1", "game-1", SEED, PLAYERS, ME, "classic", null);
+    .connect("room-1", "game-1", SEED, PLAYERS, me, "classic", null);
 }
 
 beforeEach(() => {
@@ -96,11 +106,11 @@ describe("online game store", () => {
     expect(s.eventLog.length).toBe(optimisticEvents.length);
   });
 
-  it("emits recentEvents for a rival's action", async () => {
-    await connectFresh();
+  it("emits recentEvents for a rival's action, so the board animates it", async () => {
+    await connectFresh([], "u2"); // we're u2; u1 acts first, so u1 is the rival
     const before = useOnlineGameView.getState().recentEvents;
 
-    emit({ seq: 1, action: roll("u1") }); // u1 acts first; u2 is the rival below
+    emit({ seq: 1, action: roll("u1") });
 
     const mid = useOnlineGameView.getState();
     expect(mid.recentEvents).not.toBe(before);
@@ -143,15 +153,39 @@ describe("online game store", () => {
   });
 
   it("drops our pending optimism when a rival's action lands first", async () => {
-    await connectFresh();
-    await useOnlineGameView.getState().dispatch(roll(ME));
-    expect(useOnlineGameView.getState().pendingLocal).toBe(1);
+    // We're u2, so u1's roll below is a genuine rival action. We can't reach
+    // pendingLocal > 0 through a legal off-turn dispatch here (u2 owns nothing
+    // yet), so seed it directly: what's under test is the branch in
+    // handleRemoteAction, not how the counter got there.
+    await connectFresh([], "u2");
+    useOnlineGameView.setState({ pendingLocal: 1 });
+    const staleEvents = useOnlineGameView.getState().recentEvents;
 
-    // Someone else's action commits at seq 1; our optimistic view is discarded,
-    // so our own echo (whenever it arrives) is no longer a duplicate.
     emit({ seq: 1, action: roll("u1") });
 
-    expect(useOnlineGameView.getState().pendingLocal).toBe(0);
+    const s = useOnlineGameView.getState();
+    // A rival's action rewinds `game` to the confirmed line, so our optimistic
+    // apply is gone: its echo is no longer a duplicate and must replay normally.
+    expect(s.pendingLocal).toBe(0);
+    // And this action is not ours, so the board must animate it.
+    expect(s.recentEvents).not.toBe(staleEvents);
+  });
+
+  it("treats an action by us and one by a rival differently at the same pendingLocal", async () => {
+    // The whole reason actorOf() exists. Same seq, same pendingLocal, same
+    // action shape — only the authoring seat differs, and that must decide
+    // whether the board re-animates.
+    await connectFresh([], "u1");
+    useOnlineGameView.setState({ pendingLocal: 1 });
+    const mine = useOnlineGameView.getState().recentEvents;
+    emit({ seq: 1, action: roll("u1") }); // authored by us
+    expect(useOnlineGameView.getState().recentEvents).toBe(mine);
+
+    await connectFresh([], "u2");
+    useOnlineGameView.setState({ pendingLocal: 1 });
+    const theirs = useOnlineGameView.getState().recentEvents;
+    emit({ seq: 1, action: roll("u1") }); // identical action, authored by a rival
+    expect(useOnlineGameView.getState().recentEvents).not.toBe(theirs);
   });
 
   it("ignores an action we have already confirmed", async () => {
@@ -177,6 +211,19 @@ describe("online game store", () => {
 
     expect(fetchAllMock).toHaveBeenCalledTimes(2); // connect + resync
     expect(useOnlineGameView.getState().lastError).toBeNull();
+  });
+
+  it("catches up when a dropped realtime socket rejoins", async () => {
+    await connectFresh();
+    expect(fetchAllMock).toHaveBeenCalledTimes(1); // the initial SUBSCRIBED must not resync
+
+    // While we were disconnected, u1 rolled. postgres_changes has no replay, so
+    // that INSERT is never delivered — the rejoin is our only hint we missed it.
+    fetchAllMock.mockResolvedValue([{ seq: 1, action: roll("u1") }]);
+    emitSubscribed();
+
+    await vi.waitFor(() => expect(useOnlineGameView.getState().confirmedSeq).toBe(1));
+    expect(fetchAllMock).toHaveBeenCalledTimes(2);
   });
 
   it("resyncNow rebuilds from the log and clears pending optimism", async () => {

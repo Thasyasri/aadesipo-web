@@ -119,6 +119,17 @@ export async function syncUnsyncedResults(): Promise<void> {
 
 const RECORD_RETRY_DELAYS_MS = [0, 1500, 4000];
 
+/** The status record-result returns while the game isn't marked finished yet —
+ *  the one failure that's worth waiting out. */
+const NOT_FINISHED_YET = 409;
+
+/** HTTP status of a failed `functions.invoke`, if it carries one. A network
+ *  failure has no Response at all, which is also worth retrying. */
+function statusOf(error: unknown): number | null {
+  const context = (error as { context?: unknown } | null)?.context;
+  return context instanceof Response ? context.status : null;
+}
+
 async function recordOnlineResult(
   client: NonNullable<typeof supabase>,
   gameId: string,
@@ -127,6 +138,12 @@ async function recordOnlineResult(
     if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
     const { error } = await client.functions.invoke("record-result", { body: { gameId } });
     if (!error) return true;
+
+    // Only 409 (and a total network failure) can succeed on a retry. A 403 for a
+    // game we didn't play, or a 404, will fail identically forever — retrying
+    // those would burn seconds of sleep on every sync, for the life of the row.
+    const status = statusOf(error);
+    if (status !== null && status !== NOT_FINISHED_YET) return false;
   }
   return false;
 }

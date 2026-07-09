@@ -128,9 +128,20 @@ export const useOnlineGameView = create<OnlineGameViewState>((set, get) => ({
       pendingLocal: 0,
     });
 
-    unsubscribeRealtime = subscribeToGameActions(gameId, (remote: RemoteAction) => {
-      handleRemoteAction(set, get, remote);
-    });
+    // The first SUBSCRIBED lands right after the replay above, so there's nothing
+    // to catch up on. Every later one means the socket dropped and rejoined, and
+    // any actions inserted in between were never delivered.
+    let subscribedOnce = false;
+    unsubscribeRealtime = subscribeToGameActions(
+      gameId,
+      (remote: RemoteAction) => {
+        handleRemoteAction(set, get, remote);
+      },
+      () => {
+        if (subscribedOnce) void resync(set, get);
+        subscribedOnce = true;
+      },
+    );
   },
 
   disconnect: () => {
@@ -205,6 +216,13 @@ function handleRemoteAction(
   // the EXISTING recentEvents array: handing the board a fresh (if identical)
   // array would re-fire its walk effect — restarting the pawn from the tile it
   // set off from. Confirmed state and the activity log still advance here.
+  //
+  // Keyed on the authoring seat, not on the action's contents, because a jsonb
+  // round-trip doesn't preserve key order and the payloads wouldn't compare
+  // equal. The one thing this can't distinguish is an action the *server* wrote
+  // as us (advance-turn playing our stalled turn) arriving while one of our own
+  // is still in flight — we'd skip its animation. State stays correct either
+  // way, and both a resync and any rival action clear pendingLocal.
   const isOwnEcho = pendingLocal > 0 && myUserId !== null && actorOf(remote.action) === myUserId;
 
   set({

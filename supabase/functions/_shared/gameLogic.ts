@@ -94,9 +94,17 @@ export function generateServerSeed(): string {
   return crypto.randomUUID();
 }
 
-/** Enough to carry any single stalled turn to its end (roll, resolve the tile,
- *  raise funds, end turn) without letting a pathological loop run away. */
-export const MAX_TAKEOVER_ACTIONS = 16;
+/**
+ * Enough to carry any single stalled turn to its end without letting a
+ * pathological loop run away. Generous because one turn can be long: a doubles
+ * chain, then a debt resolved by mortgaging several properties, then a run of
+ * BuildHouse actions (the AI issues one per decision) before EndTurn.
+ *
+ * Hitting the cap is not a deadlock — the turn simply hasn't passed yet, and the
+ * next advance-turn call picks up where this one stopped. But every extra call
+ * is another minute of a stuck game, so leave headroom.
+ */
+export const MAX_TAKEOVER_ACTIONS = 40;
 
 /**
  * Play a disconnected player's turn for them, so one closed tab can't deadlock
