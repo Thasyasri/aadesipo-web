@@ -9,6 +9,7 @@ import {
   fetchRoomInfo,
   fetchProfiles,
 } from "@/multiplayer/onlineClient";
+import { useTurnPresence } from "./useTurnPresence";
 import { Board } from "../board/Board";
 import { PlayerStrip } from "../hud/PlayerStrip";
 import { ActionDock } from "../hud/ActionDock";
@@ -127,6 +128,15 @@ export function OnlineGameScreen() {
     };
   }, [resyncNow]);
 
+  // Computed before the early returns below, because hooks can't be conditional.
+  const actingId = game && game.turnPhase !== "game-over" ? getActingPlayerId(game) : "";
+  const presence = useTurnPresence(
+    roomId ?? null,
+    onlineGameId,
+    actingId,
+    actingId !== "" && actingId === user?.id,
+  );
+
   if (connecting || (!game && !connectError)) {
     return (
       <div className="mx-auto max-w-md p-6">
@@ -152,7 +162,7 @@ export function OnlineGameScreen() {
     );
   }
 
-  const actingPlayerId = game.turnPhase === "game-over" ? "" : getActingPlayerId(game);
+  const actingPlayerId = actingId;
   const isActingPlayerLocal = actingPlayerId === user.id;
 
   const displaySetups: PlayerSetup[] = playerIds.map((id, i) => ({
@@ -207,6 +217,26 @@ export function OnlineGameScreen() {
             players={displaySetups}
             onOpenFull={() => setActivityOpen(true)}
           />
+
+          {presence.stalled && (
+            <div className="mx-4 mb-2 flex flex-col gap-2 rounded-md border border-bg-raised bg-bg-surface p-3">
+              <p className="text-body text-text-secondary">
+                {displaySetups.find((p) => p.id === actingPlayerId)?.displayName ?? "That player"}{" "}
+                hasn't moved in a while
+                {presence.idleSeconds !== null && ` (${Math.floor(presence.idleSeconds / 60)}m)`}.
+              </p>
+              <Button
+                variant="secondary"
+                disabled={presence.takingOver}
+                onClick={presence.takeOver}
+              >
+                {presence.takingOver ? "Playing their turn…" : "Play their turn for them"}
+              </Button>
+              {presence.error && (
+                <p className="text-caption text-semantic-error">{presence.error}</p>
+              )}
+            </div>
+          )}
 
           {lastError && (
             <p className="px-4 py-2 text-center text-caption text-semantic-error">{lastError}</p>

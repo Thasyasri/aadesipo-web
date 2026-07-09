@@ -58,40 +58,77 @@ export async function recordGameResult(input: {
  * player. Guests keep results local-only until they create an account, at which
  * point their backlog syncs on the next trigger. Best-effort: failures leave the
  * rows unsynced to retry later.
+ *
+ * The two sources take different paths on purpose. A `vs-ai` result is only ever
+ * private stats, so the client's own numbers are fine. An `online` result feeds
+ * the PUBLIC leaderboard, so the client doesn't get to report it: it names the
+ * game, and the record-result Edge Function replays that game's action log and
+ * derives won/rank/net-worth itself. RLS refuses client-written online rows.
  */
 export async function syncUnsyncedResults(): Promise<void> {
   if (!supabase) return;
+  const client = supabase;
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await client.auth.getSession();
   const user = session?.user;
   if (!user || user.is_anonymous) return; // local-only for guests
 
   const pending = await listUnsyncedResults();
   if (pending.length === 0) return;
 
-  const rows = pending.map((r) => ({
-    // r.id is the engine game id; the server row gets its own generated id and
-    // is deduped on (user_id, game_id) so each player's row for a shared online
-    // game is distinct.
-    game_id: r.id,
-    user_id: user.id,
-    mode: r.mode,
-    source: r.source,
-    player_count: r.playerCount,
-    won: r.won,
-    reason: r.reason,
-    net_worth: r.netWorth,
-    rank: r.rank,
-    rounds: r.rounds,
-    cities: r.cities,
-    finished_at: new Date(r.finishedAt).toISOString(),
-  }));
+  const synced: string[] = [];
 
-  const { error } = await supabase
-    .from("game_results")
-    .upsert(rows, { onConflict: "user_id,game_id", ignoreDuplicates: true });
-  if (!error) await markResultsSynced(pending.map((r) => r.id));
+  const local = pending.filter((r) => r.source !== "online");
+  if (local.length > 0) {
+    const rows = local.map((r) => ({
+      // r.id is the engine game id; the server row gets its own generated id and
+      // is deduped on (user_id, game_id) so each player's row for a shared online
+      // game is distinct.
+      game_id: r.id,
+      user_id: user.id,
+      mode: r.mode,
+      source: r.source,
+      player_count: r.playerCount,
+      won: r.won,
+      reason: r.reason,
+      net_worth: r.netWorth,
+      rank: r.rank,
+      rounds: r.rounds,
+      cities: r.cities,
+      finished_at: new Date(r.finishedAt).toISOString(),
+    }));
+    const { error } = await client
+      .from("game_results")
+      .upsert(rows, { onConflict: "user_id,game_id", ignoreDuplicates: true });
+    if (!error) synced.push(...local.map((r) => r.id));
+  }
+
+  // One call per online game. There's a real race on the winning move: every
+  // client reaches game-over from its own replay before validate-action has
+  // finished marking the game `finished` server-side, and record-result answers
+  // 409 until it has. Retry briefly rather than leaving the row to wait for the
+  // next sync trigger — otherwise your win only reaches the board next time you
+  // play. If the retries run out the row stays unsynced, so nothing is lost.
+  for (const result of pending.filter((r) => r.source === "online")) {
+    if (await recordOnlineResult(client, result.id)) synced.push(result.id);
+  }
+
+  if (synced.length > 0) await markResultsSynced(synced);
+}
+
+const RECORD_RETRY_DELAYS_MS = [0, 1500, 4000];
+
+async function recordOnlineResult(
+  client: NonNullable<typeof supabase>,
+  gameId: string,
+): Promise<boolean> {
+  for (const delay of RECORD_RETRY_DELAYS_MS) {
+    if (delay > 0) await new Promise((resolve) => setTimeout(resolve, delay));
+    const { error } = await client.functions.invoke("record-result", { body: { gameId } });
+    if (!error) return true;
+  }
+  return false;
 }
 
 /* ---- aggregation --------------------------------------------------------- */

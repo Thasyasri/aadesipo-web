@@ -87,6 +87,58 @@ export async function submitAction(
   return data ?? { ok: false, error: "Empty response from server" };
 }
 
+/**
+ * Tell the room you're still here. Cheap enough to call on a short interval;
+ * the only consumer is the stalled-turn takeover below.
+ */
+export async function heartbeatPresence(roomId: string): Promise<void> {
+  const client = requireSupabase();
+  const {
+    data: { session },
+  } = await client.auth.getSession();
+  const userId = session?.user?.id;
+  if (!userId) return;
+
+  await client
+    .from("room_presence")
+    .upsert(
+      { room_id: roomId, user_id: userId, last_seen_at: new Date().toISOString() },
+      { onConflict: "room_id,user_id" },
+    );
+}
+
+/** When each player in the room was last seen, as epoch milliseconds. A player
+ *  with no row has never checked in. */
+export async function fetchPresence(roomId: string): Promise<Record<string, number>> {
+  const client = requireSupabase();
+  const { data, error } = await client
+    .from("room_presence")
+    .select("user_id, last_seen_at")
+    .eq("room_id", roomId);
+  if (error) throw new Error(error.message);
+
+  const seen: Record<string, number> = {};
+  for (const row of data ?? []) seen[row.user_id] = Date.parse(row.last_seen_at);
+  return seen;
+}
+
+/**
+ * Ask the server to play a disconnected player's turn for them. It re-checks
+ * staleness against its own clock and refuses (409) if they're still around, so
+ * a client that's merely wrong about the time can't skip anyone's turn.
+ */
+export async function advanceStalledTurn(gameId: string): Promise<{ applied: number }> {
+  const client = requireSupabase();
+  const { data, error } = await client.functions.invoke<{ ok: boolean; applied: number }>(
+    "advance-turn",
+    { body: { gameId } },
+  );
+  if (error || !data) {
+    throw new Error(await functionErrorMessage(error, "Couldn't advance the turn"));
+  }
+  return { applied: data.applied };
+}
+
 export interface RemoteAction {
   seq: number;
   action: Action;

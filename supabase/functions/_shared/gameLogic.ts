@@ -13,12 +13,19 @@
 // complete, current set of `.js`. (src holds stale/partial compiled artifacts.)
 import {
   applyAction,
+  chooseAiAction,
   createInitialState,
+  createRngState,
+  getActingPlayerId,
+  getTile,
+  netWorth,
+  PERSONALITIES,
   type Action,
   type GameState,
   type GameEvent,
   type HouseRules,
   type ModeConfig,
+  type PropertyTile,
 } from "../../../packages/engine/dist/index.js";
 
 export function replayToCurrentState(
@@ -85,4 +92,102 @@ export function validateAndApplyAction(
 /** Server generates the seed at room creation — never trust a client-supplied one. */
 export function generateServerSeed(): string {
   return crypto.randomUUID();
+}
+
+/** Enough to carry any single stalled turn to its end (roll, resolve the tile,
+ *  raise funds, end turn) without letting a pathological loop run away. */
+export const MAX_TAKEOVER_ACTIONS = 16;
+
+/**
+ * Play a disconnected player's turn for them, so one closed tab can't deadlock
+ * a game forever. Nobody else can act while it's their turn — the engine won't
+ * allow it — so the only way out is to act *as* them, which no client is ever
+ * permitted to do. Hence: the server does it.
+ *
+ * The stand-in is the Miser personality at full skill — the most conservative
+ * of the three, so an absent player's position is played safe rather than
+ * gambled with. Actions are derived from a seeded RNG keyed on the game and the
+ * log length, so a retried call plans exactly the same moves.
+ *
+ * Returns the actions to append, in order, and the state they lead to. `actions`
+ * is empty if it isn't the absent player's turn after all (they came back and
+ * moved, or someone else acted), in which case `finalState` is the input state.
+ */
+export function planTakeoverActions(
+  state: GameState,
+  absentPlayerId: string,
+  rngSeed: string,
+): { readonly actions: readonly Action[]; readonly finalState: GameState } {
+  const config = { personality: PERSONALITIES.miser, skillLevel: 1 };
+  const actions: Action[] = [];
+  let rng = createRngState(rngSeed);
+  let current = state;
+
+  while (actions.length < MAX_TAKEOVER_ACTIONS) {
+    if (current.turnPhase === "game-over") break;
+    // getActingPlayerId also names the auction's turn-bidder, so a stalled
+    // bidder is unstuck the same way — and the loop stops as soon as the turn
+    // (or the bid) passes to someone else.
+    if (getActingPlayerId(current) !== absentPlayerId) break;
+
+    const decision = chooseAiAction(current, config, rng);
+    rng = decision.nextRng;
+
+    const result = applyAction(current, decision.action);
+    if (!result.ok) break; // never append an action the engine would reject
+    current = result.state;
+    actions.push(decision.action);
+  }
+
+  return { actions, finalState: current };
+}
+
+export interface DerivedGameResult {
+  readonly mode: string;
+  readonly playerCount: number;
+  readonly won: boolean;
+  readonly reason: "last-player-standing" | "net-worth-at-cap";
+  readonly netWorth: number;
+  readonly rank: number;
+  readonly rounds: number;
+  readonly cities: readonly string[];
+}
+
+/**
+ * Derive one player's result from a finished game's replayed state.
+ *
+ * This exists so the server never takes a client's word for who won, what they
+ * were worth, or where they placed — those feed the public leaderboard, and the
+ * client had every incentive to lie. The shape deliberately mirrors
+ * `recordGameResult` in src/services/stats.ts; that copy still writes local
+ * `vs-ai` rows (private stats), but online rows now come from here.
+ *
+ * Returns null if the game isn't actually over, or the user wasn't in it.
+ */
+export function deriveGameResult(state: GameState, userId: string): DerivedGameResult | null {
+  if (state.turnPhase !== "game-over" || !state.winnerId) return null;
+  if (!state.players.some((p) => p.id === userId)) return null;
+
+  const ranked = [...state.players].sort((a, b) => netWorth(state, b.id) - netWorth(state, a.id));
+  const rank = ranked.findIndex((p) => p.id === userId) + 1;
+
+  const cities = Object.entries(state.properties)
+    .filter(([, ownership]) => ownership.ownerId === userId)
+    .map(([position]) => getTile(Number(position)))
+    .filter((tile): tile is PropertyTile => tile.type === "property")
+    .map((tile) => tile.name);
+
+  return {
+    mode: state.mode.id,
+    playerCount: state.players.length,
+    won: state.winnerId === userId,
+    reason:
+      state.players.filter((p) => !p.isBankrupt).length === 1
+        ? "last-player-standing"
+        : "net-worth-at-cap",
+    netWorth: netWorth(state, userId),
+    rank: rank > 0 ? rank : state.players.length,
+    rounds: state.roundNumber,
+    cities,
+  };
 }

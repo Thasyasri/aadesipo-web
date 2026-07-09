@@ -53,11 +53,45 @@ Deploy it to whatever serves the public domain — a static host
 (Cloudflare Pages, Netlify, GitHub Pages) works fine since it's
 genuinely just one HTML file with embedded CSS and a Google Fonts link.
 
+## Supabase deploy — required before the next release
+
+The QA pass added three migrations and two Edge Functions. The app degrades
+without them: online results stop syncing, and a disconnected player still
+deadlocks their game.
+
+Apply, in order:
+
+- `0008_lock_room_after_start.sql` — freezes room settings and seating once a
+  game starts. Nothing writes those tables from the client, so this is safe to
+  apply at any time.
+- `0009_verified_online_results.sql` — stops clients inserting `source='online'`
+  result rows. **Deploy `record-result` first**, or online results will fail to
+  sync (they retry, so nothing is lost). Any pre-existing online rows are
+  self-reported; the file ends with the `delete` to clear them.
+- `0010_presence_and_takeover.sql` — adds `room_presence`.
+
+Then deploy both functions:
+
+```
+supabase functions deploy record-result
+supabase functions deploy advance-turn
+```
+
+Both need `SUPABASE_SERVICE_ROLE_KEY` in the function environment, as the
+existing functions already do.
+
 ## Final pre-submission checklist
 
 - [x] Real Supabase project deployed and smoke-tested (M8 README) —
       migrations 0001-0007 applied; sign-in, `profiles` update and the
       `game_results` RLS insert all verified against the live project.
+- [ ] Migrations 0008-0010 applied and `record-result` + `advance-turn`
+      deployed (see above). Until then the public leaderboard accepts
+      client-reported wins.
+- [ ] One real two-player online game played end to end. The store logic is
+      unit-tested, but no automated test can drive two authenticated clients
+      in a room — reconnect, the turn-takeover banner, and result sync have
+      never run against the live project.
 - [ ] Real Sentry DSN + PostHog key set (M9/M11)
 - [ ] `docs/LEGAL_AND_CONTENT_REVIEW.md` — trademark review with an
       actual lawyer done, at minimum
