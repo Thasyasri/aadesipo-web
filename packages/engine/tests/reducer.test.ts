@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
   applyAction,
+  canSellPropertyNow,
+  canUseLoansNow,
   createInitialState,
   resolveLandedTile,
   MAX_EVENT_CHAIN_DEPTH,
@@ -1668,5 +1670,77 @@ describe("dynamic taxes", () => {
       CLASSIC_MODE.startingCash - expected,
     );
     expect(totalMoneyInSystem(result.state)).toBe(before);
+  });
+});
+
+// The UI reads these predicates to enable/disable controls. If a guard is ever
+// added or removed in the reducer, these tests fail — which is the signal that
+// PropertiesSheet's gating has to move with it.
+describe("action-availability predicates the UI gates on", () => {
+  const owned: PropertyOwnership = {
+    ownerId: "p1",
+    houses: 0,
+    hasHotel: false,
+    isMortgaged: false,
+  };
+
+  it("lets an owner manage their portfolio during a rival's turn", () => {
+    // No turn or phase guard on these four — PropertiesSheet deliberately does
+    // not gate them on whose turn it is.
+    let state = freshGame();
+    state = { ...state, properties: { 1: owned }, currentPlayerIndex: 1 }; // p2's turn
+    expect(state.players[state.currentPlayerIndex]?.id).toBe("p2");
+
+    const mortgaged = applyAction(state, { type: "MortgageProperty", playerId: "p1", position: 1 });
+    expect(mortgaged.ok).toBe(true);
+    if (!mortgaged.ok) return;
+    const unmortgaged = applyAction(mortgaged.state, {
+      type: "UnmortgageProperty",
+      playerId: "p1",
+      position: 1,
+    });
+    expect(unmortgaged.ok).toBe(true);
+  });
+
+  it("canUseLoansNow matches the reducer's turn + turn-idle guard", () => {
+    const base = freshGame();
+    expect(base.turnPhase).toBe("awaiting-roll");
+    expect(canUseLoansNow(base, "p1")).toBe(false); // your turn, wrong phase
+    expect(canUseLoansNow(base, "p2")).toBe(false); // not your turn
+
+    const idle: GameState = { ...base, turnPhase: "turn-idle" };
+    expect(canUseLoansNow(idle, "p1")).toBe(true);
+    expect(canUseLoansNow(idle, "p2")).toBe(false);
+    expect(canUseLoansNow({ ...idle, turnPhase: "game-over" }, "p1")).toBe(false);
+
+    // And the reducer agrees: borrowing in the wrong phase is rejected for that
+    // reason, not for some unrelated one.
+    const rejected = applyAction(base, { type: "TakeLoan", playerId: "p1", amount: 10 });
+    expect(rejected.ok).toBe(false);
+    if (rejected.ok) return;
+    expect(rejected.reason).toMatch(/between turns/);
+  });
+
+  it("canSellPropertyNow matches the reducer's turn + sellable-phase guard", () => {
+    const base: GameState = { ...freshGame(), properties: { 1: owned } };
+
+    for (const phase of ["awaiting-roll", "turn-idle", "resolving-debt"] as const) {
+      const state: GameState = { ...base, turnPhase: phase };
+      expect(canSellPropertyNow(state, "p1")).toBe(true);
+      expect(applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 }).ok).toBe(
+        true,
+      );
+    }
+
+    for (const phase of ["awaiting-tile-decision", "awaiting-auction", "game-over"] as const) {
+      const state: GameState = { ...base, turnPhase: phase };
+      expect(canSellPropertyNow(state, "p1")).toBe(false);
+      expect(applyAction(state, { type: "SellProperty", playerId: "p1", position: 1 }).ok).toBe(
+        false,
+      );
+    }
+
+    // Never for a player whose turn it isn't, in any phase.
+    expect(canSellPropertyNow({ ...base, turnPhase: "turn-idle" }, "p2")).toBe(false);
   });
 });

@@ -631,6 +631,26 @@ const SELLABLE_PHASES: ReadonlySet<GameState["turnPhase"]> = new Set([
   "resolving-debt", // raising funds to cover a debt
 ]);
 
+/**
+ * May `playerId` list a property for auction right now? Mirrors the turn/phase
+ * guards in handleSellProperty. Exported so the UI reads the rule off the engine
+ * instead of re-deriving it, and an enabled button always means an action the
+ * reducer will accept.
+ *
+ * Note there is deliberately no equivalent for building, mortgaging or selling
+ * houses: those carry no turn or phase guard, so an owner may manage their
+ * portfolio at any point in the game, including during a rival's turn.
+ */
+export function canSellPropertyNow(state: GameState, playerId: string): boolean {
+  return requireCurrentPlayer(state, playerId) === null && SELLABLE_PHASES.has(state.turnPhase);
+}
+
+/** May `playerId` borrow or repay right now? Mirrors handleTakeLoan and
+ *  handleRepayLoan: loans are strictly a between-turns lever. */
+export function canUseLoansNow(state: GameState, playerId: string): boolean {
+  return requireCurrentPlayer(state, playerId) === null && state.turnPhase === "turn-idle";
+}
+
 function handleSellProperty(state: GameState, playerId: string, position: number): ActionResult {
   const turnError = requireCurrentPlayer(state, playerId);
   if (turnError) return reject(turnError);

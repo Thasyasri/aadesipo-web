@@ -16,6 +16,12 @@ import {
 import { replayToCurrentState, validateAndApplyAction } from "../_shared/gameLogic.ts";
 import { withCors } from "../_shared/cors.ts";
 
+/** Postgres unique_violation — here, two seats racing for the same `seq`. */
+const UNIQUE_VIOLATION = "23505";
+/** Enough to absorb a genuine simultaneous-action race without letting a
+ *  pathological hot loop hammer the database. */
+const MAX_SEQ_ATTEMPTS = 4;
+
 /**
  * Untested like everything else in this file (see the M9 summary) —
  * additionally dependent on VAPID keys being configured as Edge Function
@@ -133,74 +139,89 @@ Deno.serve(
     }
     const playerIds = seats.map((s) => s.user_id as string);
 
-    const { data: pastActions, error: actionsError } = await supabase
-      .from("game_actions")
-      .select("seq, payload")
-      .eq("game_id", gameId)
-      .order("seq", { ascending: true });
+    // Read the log, validate against it, and claim the next seq — retrying if
+    // someone else claimed that seq first. Two seats can legally act at the
+    // same instant (bidding in an auction, answering a trade), and both would
+    // otherwise compute the same nextSeq: the unique (game_id, seq) constraint
+    // keeps the log correct, but the loser's legal action was being dropped
+    // with a raw 500. A retry must re-read and RE-VALIDATE, never just bump the
+    // seq — the action that beat us may have made this one illegal.
+    for (let attempt = 0; attempt < MAX_SEQ_ATTEMPTS; attempt++) {
+      const { data: pastActions, error: actionsError } = await supabase
+        .from("game_actions")
+        .select("seq, payload")
+        .eq("game_id", gameId)
+        .order("seq", { ascending: true });
 
-    if (actionsError) {
-      return new Response(JSON.stringify({ error: actionsError.message }), { status: 500 });
-    }
-
-    let currentState;
-    try {
-      currentState = replayToCurrentState(
-        game.seed,
-        modeById(room.mode),
-        playerIds,
-        (pastActions ?? []).map((a) => a.payload as Action),
-        (room.house_rules as HouseRules | null) ?? undefined,
-      );
-    } catch (err) {
-      return new Response(
-        JSON.stringify({ error: `Stored action log is corrupt: ${(err as Error).message}` }),
-        { status: 500 },
-      );
-    }
-
-    const result = validateAndApplyAction(currentState, action, user.id);
-    if (!result.ok) {
-      return new Response(JSON.stringify({ ok: false, reason: result.reason }), { status: 200 });
-    }
-
-    const nextSeq = (pastActions?.length ?? 0) + 1;
-    const { error: insertError } = await supabase.from("game_actions").insert({
-      game_id: gameId,
-      seq: nextSeq,
-      actor_id: user.id,
-      action_type: action.type,
-      payload: action,
-    });
-
-    if (insertError) {
-      return new Response(JSON.stringify({ error: insertError.message }), { status: 500 });
-    }
-
-    if (result.state!.turnPhase === "game-over") {
-      await supabase
-        .from("games")
-        .update({ status: "finished", ended_at: new Date().toISOString() })
-        .eq("id", gameId);
-    } else {
-      // Best-effort turn notification — never let a push failure affect
-      // the actual game action, which has already succeeded by this point.
-      try {
-        const newActingId = getActingPlayerId(result.state!);
-        if (newActingId !== user.id) {
-          await sendTurnPush(supabase, newActingId, gameId);
-        }
-      } catch (pushError) {
-        console.error("Turn push notification failed:", pushError);
+      if (actionsError) {
+        return new Response(JSON.stringify({ error: actionsError.message }), { status: 500 });
       }
+
+      let currentState;
+      try {
+        currentState = replayToCurrentState(
+          game.seed,
+          modeById(room.mode),
+          playerIds,
+          (pastActions ?? []).map((a) => a.payload as Action),
+          (room.house_rules as HouseRules | null) ?? undefined,
+        );
+      } catch (err) {
+        return new Response(
+          JSON.stringify({ error: `Stored action log is corrupt: ${(err as Error).message}` }),
+          { status: 500 },
+        );
+      }
+
+      const result = validateAndApplyAction(currentState, action, user.id);
+      if (!result.ok) {
+        return new Response(JSON.stringify({ ok: false, reason: result.reason }), { status: 200 });
+      }
+
+      const nextSeq = (pastActions?.length ?? 0) + 1;
+      const { error: insertError } = await supabase.from("game_actions").insert({
+        game_id: gameId,
+        seq: nextSeq,
+        actor_id: user.id,
+        action_type: action.type,
+        payload: action,
+      });
+
+      if (insertError) {
+        if (insertError.code === UNIQUE_VIOLATION) continue; // lost the race — re-validate
+        return new Response(JSON.stringify({ error: insertError.message }), { status: 500 });
+      }
+
+      if (result.state!.turnPhase === "game-over") {
+        await supabase
+          .from("games")
+          .update({ status: "finished", ended_at: new Date().toISOString() })
+          .eq("id", gameId);
+      } else {
+        // Best-effort turn notification — never let a push failure affect
+        // the actual game action, which has already succeeded by this point.
+        try {
+          const newActingId = getActingPlayerId(result.state!);
+          if (newActingId !== user.id) {
+            await sendTurnPush(supabase, newActingId, gameId);
+          }
+        } catch (pushError) {
+          console.error("Turn push notification failed:", pushError);
+        }
+      }
+
+      // No explicit broadcast call needed — clients subscribed to
+      // postgres_changes on game_actions (filtered by game_id) receive
+      // this insert automatically.
+      return new Response(JSON.stringify({ ok: true, seq: nextSeq }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    // No explicit broadcast call needed — clients subscribed to
-    // postgres_changes on game_actions (filtered by game_id) receive
-    // this insert automatically.
-    return new Response(JSON.stringify({ ok: true, seq: nextSeq }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ ok: false, reason: "Another player acted at the same moment — try again." }),
+      { status: 200, headers: { "Content-Type": "application/json" } },
+    );
   }),
 );

@@ -113,6 +113,11 @@ export const useGameView = create<GameViewState>((set, get) => ({
   resumeGame: async (gameId) => {
     const loaded = await loadGame(gameId);
     if (!loaded) return false;
+    // A finished game isn't resumable. Without this, navigating back to a
+    // completed game's URL replays it into a `game-over` state, remounts the
+    // victory dialog and re-fires its gameCompleted analytics event. (The
+    // result row itself is idempotent, so only the analytics double-counted.)
+    if (loaded.meta.isFinished) return false;
 
     const rules = loaded.meta.houseRules ?? DEFAULT_HOUSE_RULES;
     const mode = loaded.meta.mode ?? CLASSIC_MODE;

@@ -226,12 +226,11 @@ export function GameScreen() {
         // human in Vs. AI. Passing the ACTING player here used to hand you the
         // AI's portfolio (and its buildings) whenever it was the AI's turn.
         playerId={localHumanId ?? actingPlayerId}
-        canAct={
-          localHumanId === actingPlayerId &&
-          isActingPlayerLocal &&
-          !animating &&
-          game.turnPhase !== "game-over"
-        }
+        // Not gated on whose turn it is: the engine lets an owner build, sell
+        // buildings and (un)mortgage at any time, so a Vs. AI player can manage
+        // their portfolio while the AI takes its turn. The sheet asks the engine
+        // itself about the two controls that ARE turn-bound (loans, auctions).
+        canManage={localHumanId !== null && !animating}
         open={propertiesOpen}
         onClose={() => setPropertiesOpen(false)}
         dispatch={dispatch}

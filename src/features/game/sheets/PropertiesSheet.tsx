@@ -3,6 +3,8 @@ import {
   loanCap,
   canBuildEvenly,
   canSellEvenly,
+  canSellPropertyNow,
+  canUseLoansNow,
   ownershipAt,
   propertiesOwnedBy,
   type Action,
@@ -23,10 +25,13 @@ interface PropertiesSheetProps {
    *  server rejected the action, but it should never have been offered). The
    *  same flaw exposed the AI's portfolio in a vs-AI game. */
   playerId: string;
-  /** Whether this viewer may act right now — it's their turn and this device
-   *  controls that seat. Looking at your own properties is always allowed;
-   *  building, selling and mortgaging are not. */
-  canAct: boolean;
+  /** Whether this device may dispatch on that seat's behalf at all: the game is
+   *  live and the board has settled. NOT "is it their turn" — the engine lets an
+   *  owner build, sell buildings and (un)mortgage at any point, including during
+   *  a rival's turn, so gating those on the turn would lock a player out of the
+   *  portfolio management the rules allow. The two controls that DO carry turn
+   *  and phase guards ask the engine directly, below. */
+  canManage: boolean;
   open: boolean;
   onClose: () => void;
   dispatch: (action: Action) => void;
@@ -37,7 +42,7 @@ interface PropertiesSheetProps {
 export function PropertiesSheet({
   game,
   playerId,
-  canAct,
+  canManage,
   open,
   onClose,
   dispatch,
@@ -45,6 +50,10 @@ export function PropertiesSheet({
 }: PropertiesSheetProps) {
   const owned = propertiesOwnedBy(game, playerId);
   const supply = game.buildingSupply;
+  // Listing for auction is a turn action confined to specific phases; loans are
+  // strictly between turns. Both rules come straight from the engine.
+  const canList = canManage && canSellPropertyNow(game, playerId);
+  const canLoan = canManage && canUseLoansNow(game, playerId);
 
   return (
     <BottomSheet open={open} onClose={onClose}>
@@ -55,7 +64,7 @@ export function PropertiesSheet({
           {supply.hotels === 1 ? "hotel" : "hotels"} left
         </p>
       )}
-      <LoanSection game={game} playerId={playerId} canAct={canAct} dispatch={dispatch} />
+      <LoanSection game={game} playerId={playerId} canAct={canLoan} dispatch={dispatch} />
       {owned.length === 0 ? (
         <p className="text-body text-text-secondary">You don't own any properties yet.</p>
       ) : (
@@ -78,10 +87,10 @@ export function PropertiesSheet({
               : false;
             const unevenBuild = !canBuildEvenly(game, playerId, position);
             const canBuild =
-              canAct && tile.type === "property" && !mortgaged && !outOfStock && !unevenBuild;
+              canManage && tile.type === "property" && !mortgaged && !outOfStock && !unevenBuild;
             const hasBuildings = houses > 0 || ownership?.hasHotel;
             const canSell =
-              canAct && tile.type === "property" && canSellEvenly(game, playerId, position);
+              canManage && tile.type === "property" && canSellEvenly(game, playerId, position);
             // Why a build/sell control is unavailable — shown as a caption so a
             // disabled button never reads as a broken control.
             const buildBlockedReason =
@@ -154,7 +163,7 @@ export function PropertiesSheet({
                       className={`w-full !min-w-0 !px-2 !py-2 !text-body ${
                         tile.type !== "property" ? "col-span-2" : ""
                       }`}
-                      disabled={!canAct || !!hasBuildings}
+                      disabled={!canManage || !!hasBuildings}
                       onClick={() =>
                         dispatch({ type: "MortgageProperty", playerId: playerId, position })
                       }
@@ -165,7 +174,7 @@ export function PropertiesSheet({
                     <Button
                       variant="secondary"
                       className="col-span-2 w-full !min-w-0 !px-2 !py-2 !text-body"
-                      disabled={!canAct}
+                      disabled={!canManage}
                       onClick={() =>
                         dispatch({
                           type: "UnmortgageProperty",
@@ -181,7 +190,7 @@ export function PropertiesSheet({
                     <Button
                       variant="tertiary"
                       className="col-span-2 w-full !min-w-0 !px-2 !py-2 !text-body"
-                      disabled={!canAct}
+                      disabled={!canList}
                       onClick={() =>
                         dispatch({ type: "SellProperty", playerId: playerId, position })
                       }
@@ -197,7 +206,8 @@ export function PropertiesSheet({
                     ? !canSell
                       ? "Sell buildings evenly across the colour group first."
                       : "Sell all buildings before you can mortgage."
-                    : buildBlockedReason;
+                    : (buildBlockedReason ??
+                      (canManage && !canList ? "You can list a property on your own turn." : null));
                   return hint ? <p className="text-caption text-text-disabled">{hint}</p> : null;
                 })()}
               </div>
@@ -257,8 +267,8 @@ function LoanSection({
 }: {
   game: GameState;
   playerId: string;
-  /** Borrowing/repaying is a turn action — always viewable, only actionable on
-   *  your own turn, from the device that controls the seat. */
+  /** Already reduced to the engine's rule by the caller: your seat, your turn,
+   *  and only in the `turn-idle` phase. Always viewable, rarely actionable. */
   canAct: boolean;
   dispatch: (action: Action) => void;
 }) {
@@ -310,6 +320,11 @@ function LoanSection({
             Borrow {formatRupees(cap)}
           </Button>
         </>
+      )}
+      {!canAct && (
+        <p className="text-caption text-text-disabled">
+          The bank only lends between turns — end your roll first.
+        </p>
       )}
     </div>
   );

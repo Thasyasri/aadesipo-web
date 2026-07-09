@@ -78,8 +78,8 @@ export function ActionDock({
   const player = game.players.find((p) => p.id === actingPlayerId);
 
   // The Trade button is always available to the local human (it isn't gated by
-  // turn phase — the engine allows proposing/answering trades any time). Only
-  // rendered offline, where onOpenTrade is provided.
+  // turn phase — the engine allows proposing/answering trades any time). Absent
+  // only when no local human could propose one.
   const tradeButton = onOpenTrade ? (
     <div className="relative">
       <Button variant="tertiary" onClick={onOpenTrade}>

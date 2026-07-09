@@ -257,7 +257,10 @@ export function OnlineGameScreen() {
         // This device owns exactly the signed-in user's seat — never the acting
         // player's, or every rival would see (and try to sell) their buildings.
         playerId={user.id}
-        canAct={isActingPlayerLocal && !animating && game.turnPhase !== "game-over"}
+        // Off-turn building/mortgaging is legal (the engine has no turn guard on
+        // it) and validate-action accepts it, since it only checks that the
+        // action's actor is the authenticated user.
+        canManage={!animating && game.turnPhase !== "game-over"}
         open={propertiesOpen}
         onClose={() => setPropertiesOpen(false)}
         dispatch={dispatch}
