@@ -28,6 +28,10 @@ interface BoardProps {
   onSelectTile?: (position: number) => void;
   /** Tapped the center emblem — opens the event-tables sheet. */
   onSelectEmblem?: () => void;
+  /** Fires on the edges of "a token is moving". The game screen gates the whole
+   *  turn on this: no AI thinking, no player controls, no landing sheets while
+   *  a pawn is still walking. */
+  onAnimatingChange?: (animating: boolean) => void;
 }
 
 // Per-player token seat within a tile, so multiple tokens on one tile don't
@@ -40,20 +44,29 @@ const SEAT_OFFSETS: ReadonlyArray<readonly [number, number]> = [
   [0, 0],
 ];
 
-// Longest move animated tile-by-tile. Dice rolls (2-12) and short event hops
-// always walk; a long "advance to tile" jump just glides straight there.
-export const WALK_STEP_CAP = 12;
-
 // A dice-driven move holds the token in place this long before walking, so it
 // steps out only once the roll has been revealed (matches DiceCeremony's
 // TUMBLE_MS ~700ms) rather than moving while the dice are still tumbling.
+// Counted down inside the ticker (NOT a setTimeout) so no re-render can cancel
+// a pending walk mid-flight.
 export const WALK_START_DELAY_MS = 720;
 
 // Duration of one tile-to-tile hop. Deliberately slow so a player can watch —
-// and count — the coin step across each tile. Also the game screen's per-tile
-// estimate for holding the landing sheet until the walk is done.
+// and count — the pawn step across each tile.
 const HOP_MS = 500;
-export const APPROX_MS_PER_TILE = HOP_MS;
+
+// EVERY move is walked one tile at a time — a roll of 12 steps twelve times,
+// and a long "advance to tile" event never teleports. To keep a 30-tile jump
+// watchable rather than interminable, the per-hop duration compresses so any
+// single walk fits inside this budget. Short moves (<= 12 tiles) are unaffected
+// and keep the full, countable HOP_MS pace.
+const WALK_TIME_BUDGET_MS = 6000;
+const MIN_HOP_MS = 120;
+
+function hopDurationFor(steps: number): number {
+  if (steps <= 0) return HOP_MS;
+  return Math.max(MIN_HOP_MS, Math.min(HOP_MS, Math.round(WALK_TIME_BUDGET_MS / steps)));
+}
 
 // Premium navy board (D3a) — matches the app's --color-bg-* / text tokens so
 // the board reads as the same world as the surrounding UI. The board is a dark
@@ -194,6 +207,78 @@ interface TokenSprite {
   /** The hop currently in flight — a single tile-to-tile bounce (Ludo-style),
    *  or null when the token isn't hopping. */
   hop: { fromX: number; fromY: number; toX: number; toY: number; elapsed: number } | null;
+  /** Milliseconds still to wait before this token's queued walk begins (the
+   *  dice reveal). Ticked down each frame; while it's > 0 with a queued walk
+   *  the token is held EXACTLY in place — no easing — so it can't drift toward
+   *  the destination and then snap back when the walk starts. */
+  walkDelay: number;
+  /** Per-hop duration for the walk currently queued (see hopDurationFor). */
+  hopMs: number;
+}
+
+/** A token is "busy" while it is waiting to walk, walking, or mid-hop. Turn
+ *  progression is gated on no token being busy. */
+function isTokenBusy(t: TokenSprite): boolean {
+  return t.hop !== null || t.queue.length > 0 || t.walkDelay > 0;
+}
+
+/** Darken a 0xRRGGBB colour (f < 1) — used for the pawn's shaded side/base. */
+function shade(hex: number, f: number): number {
+  const ch = (s: number) => Math.max(0, Math.min(255, Math.round(((hex >> s) & 255) * f)));
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
+/** Mix a colour toward white (f = amount) — the pawn's lit side / specular. */
+function tint(hex: number, f: number): number {
+  const ch = (s: number) => {
+    const c = (hex >> s) & 255;
+    return Math.round(c + (255 - c) * f);
+  };
+  return (ch(16) << 16) | (ch(8) << 8) | ch(0);
+}
+
+/**
+ * A chess pawn, drawn to read as a small 3D piece rather than a flat coin:
+ * a ground shadow, a turned base, a tapered stem, a collar, and a domed head —
+ * with the light coming from the upper left (a rim highlight on the head, a
+ * darker right flank) so it has volume at token size.
+ *
+ * `r` is the piece's unit radius; the pawn stands ~2.5r tall and ~1.9r wide,
+ * which keeps it inside the 16px seat spacing even with five on one tile.
+ */
+function buildPawn(colorHex: number, r: number): Graphics {
+  const body = colorHex;
+  const dark = shade(colorHex, 0.6);
+  const mid = shade(colorHex, 0.82);
+  const light = tint(colorHex, 0.5);
+  const g = new Graphics();
+
+  // Ground shadow — sells the "standing on the tile" read.
+  g.ellipse(0, r * 1.02, r * 0.92, r * 0.28).fill({ color: 0x000000, alpha: 0.38 });
+
+  // Turned base: a wide foot with a lip above it.
+  g.ellipse(0, r * 0.8, r * 0.94, r * 0.3).fill(dark);
+  g.roundRect(-r * 0.66, r * 0.44, r * 1.32, r * 0.34, r * 0.14).fill(body);
+
+  // Tapered stem, with the right flank shaded.
+  g.poly([-r * 0.36, r * 0.5, r * 0.36, r * 0.5, r * 0.21, -r * 0.1, -r * 0.21, -r * 0.1]).fill(
+    body,
+  );
+  g.poly([r * 0.06, r * 0.5, r * 0.36, r * 0.5, r * 0.21, -r * 0.1, r * 0.04, -r * 0.1]).fill({
+    color: mid,
+    alpha: 0.9,
+  });
+
+  // Collar, then the domed head.
+  g.ellipse(0, -r * 0.1, r * 0.46, r * 0.16).fill(dark);
+  g.circle(0, -r * 0.6, r * 0.45).fill(body);
+  // Upper-left specular, lower-right shade — the volume cue.
+  g.circle(-r * 0.15, -r * 0.72, r * 0.17).fill({ color: light, alpha: 0.9 });
+  g.circle(r * 0.16, -r * 0.5, r * 0.2).fill({ color: mid, alpha: 0.45 });
+
+  // A single dark contour keeps it legible against the navy board.
+  g.circle(0, -r * 0.6, r * 0.45).stroke({ width: 1.2, color: BG_BASE, alpha: 0.85 });
+  g.ellipse(0, r * 0.8, r * 0.94, r * 0.3).stroke({ width: 1.2, color: BG_BASE, alpha: 0.85 });
+  return g;
 }
 
 /** Live overlay objects for one ownable tile, updated in place. */
@@ -237,9 +322,21 @@ function tileTextLayout(rect: TileRect, cell: number) {
   };
 }
 
-export function Board({ game, players, events = [], onSelectTile, onSelectEmblem }: BoardProps) {
+export function Board({
+  game,
+  players,
+  events = [],
+  onSelectTile,
+  onSelectEmblem,
+  onAnimatingChange,
+}: BoardProps) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const hostRef = useRef<HTMLDivElement>(null);
+  // The ticker lives outside React, so reach the latest callback through a ref
+  // and only fire it on the busy/idle edges.
+  const onAnimatingChangeRef = useRef(onAnimatingChange);
+  onAnimatingChangeRef.current = onAnimatingChange;
+  const busyRef = useRef(false);
   // Kept in refs so the (once-per-size) init effect always calls the latest
   // handlers without needing to re-init Pixi when they change.
   const onSelectTileRef = useRef(onSelectTile);
@@ -330,13 +427,24 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
         const hopHeight = cell * 0.5; // how high the token arcs between tiles
         app.ticker.add((ticker) => {
           const dt = ticker.deltaMS;
+          let anyBusy = false;
+
           for (const token of tokens.values()) {
+            if (token.walkDelay > 0 && token.queue.length > 0) {
+              // Waiting out the dice reveal. Hold the token EXACTLY where it is
+              // — deliberately no easing — so it never drifts toward the
+              // destination and snap back when the walk begins.
+              token.walkDelay -= dt;
+              anyBusy = true;
+              continue;
+            }
+
             if (token.hop) {
               // A single tile-to-tile bounce: ease across horizontally while
               // arcing up and back down, with a little pop at the apex — the
               // Ludo-style hop.
               token.hop.elapsed += dt;
-              const p = Math.min(1, token.hop.elapsed / HOP_MS);
+              const p = Math.min(1, token.hop.elapsed / token.hopMs);
               const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2; // easeInOut
               const arc = Math.sin(Math.PI * p);
               token.container.x = token.hop.fromX + (token.hop.toX - token.hop.fromX) * e;
@@ -360,10 +468,21 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
                 elapsed: 0,
               };
             } else {
-              // Settled: ease gently to the resting seat.
-              token.container.x += (token.targetX - token.container.x) * 0.2;
-              token.container.y += (token.targetY - token.container.y) * 0.2;
+              // Settled: ease gently to the resting seat. Frame-rate normalised
+              // so a 120Hz display doesn't snap twice as fast as a 60Hz one.
+              const k = 1 - Math.pow(1 - 0.2, dt / 16.67);
+              token.container.x += (token.targetX - token.container.x) * k;
+              token.container.y += (token.targetY - token.container.y) * k;
             }
+
+            if (isTokenBusy(token)) anyBusy = true;
+          }
+
+          // Publish the animation gate exactly on its edges. Turn progression
+          // (AI thinking, human controls, landing sheets) waits on this.
+          if (anyBusy !== busyRef.current) {
+            busyRef.current = anyBusy;
+            onAnimatingChangeRef.current?.(anyBusy);
           }
         });
 
@@ -382,6 +501,13 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
       worldRef.current = null;
       setReady(false);
       host.replaceChildren();
+      // The ticker owned the animation gate; tearing it down mid-walk (a resize
+      // destroys and rebuilds the app) would otherwise leave the whole turn
+      // blocked on an `animating` that can never clear. Release it here.
+      if (busyRef.current) {
+        busyRef.current = false;
+        onAnimatingChangeRef.current?.(false);
+      }
     };
   }, [size]);
 
@@ -404,24 +530,36 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
       let token = tokensRef.current.get(player.id);
       if (!token) {
         const container = new Container();
-        const circle = new Graphics()
-          .circle(0, 0, Math.min(cell, 24) * 0.28)
-          .fill(hexToPixiColor(PLAYER_COLORS[i % PLAYER_COLORS.length]!))
-          .stroke({ width: 2, color: BG_BASE });
+        const r = Math.min(cell, 24) * 0.34;
+        const pawn = buildPawn(hexToPixiColor(PLAYER_COLORS[i % PLAYER_COLORS.length]!), r);
+        // The seat initial sits on the pawn's base — the widest part — so five
+        // same-shaped pieces on one tile are still told apart at a glance.
         const label = new Text({
           text: initialForRef.current(player.id),
-          style: new TextStyle({ fill: BG_BASE, fontSize: 11, fontWeight: "700" }),
+          style: new TextStyle({
+            fill: BG_BASE,
+            fontSize: Math.max(8, Math.round(r * 1.05)),
+            fontWeight: "700",
+            fontFamily: "Manrope",
+          }),
         });
         label.anchor.set(0.5);
-        container.addChild(circle, label);
+        label.y = r * 0.6;
+        container.addChild(pawn, label);
         container.x = targetX;
         container.y = targetY;
         world.addChild(container);
-        token = { container, targetX, targetY, queue: [], hop: null };
+        token = { container, targetX, targetY, queue: [], hop: null, walkDelay: 0, hopMs: HOP_MS };
         tokensRef.current.set(player.id, token);
       }
-      token.targetX = targetX;
-      token.targetY = targetY;
+      // Only re-seat an IDLE token. A busy one already owns its destination (set
+      // by startWalk); overwriting it here — which happens on every unrelated
+      // game update, e.g. a rival's dispatch — is what made the pawn drift
+      // toward its target and then jump back when the walk finally started.
+      if (!isTokenBusy(token)) {
+        token.targetX = targetX;
+        token.targetY = targetY;
+      }
       token.container.alpha = player.isBankrupt ? 0.3 : 1;
     });
   }, [game, size, ready]);
@@ -449,14 +587,14 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
       if (ev.type === "PlayerMoved") {
         const dir = Math.sign(ev.steps);
         const count = Math.abs(ev.steps);
-        if (count > 0 && count <= WALK_STEP_CAP) {
-          for (let k = 1; k <= count; k++)
-            push(ev.playerId, (((ev.from + dir * k) % 40) + 40) % 40);
-        } else {
-          push(ev.playerId, ev.to); // no move, or a long jump — glide straight there
-        }
+        // EVERY move walks, one tile at a time — including a 12 and including a
+        // long "advance to tile" event. Nothing teleports; hopDurationFor keeps
+        // the long ones watchable by stepping faster, not by skipping.
+        for (let k = 1; k <= count; k++) push(ev.playerId, (((ev.from + dir * k) % 40) + 40) % 40);
+        if (count === 0) push(ev.playerId, ev.to);
       } else if (ev.type === "SentToJail") {
-        push(ev.playerId, JAIL_POSITION); // hop to jail after any walk resolves
+        // "Go directly to Jail" is a teleport by rule, not a walk.
+        push(ev.playerId, JAIL_POSITION);
       }
     }
     if (paths.size === 0) return;
@@ -466,33 +604,24 @@ export function Board({ game, players, events = [], onSelectTile, onSelectEmblem
       const rect = computeTileRect(pos, size);
       return [rect.x + rect.width / 2 + ox, rect.y + rect.height / 2 + oy];
     };
-    const startWalk = () => {
-      for (const [playerId, tilePositions] of paths) {
-        const token = tokensRef.current.get(playerId);
-        if (!token) continue;
-        token.queue = tilePositions.map((pos) => waypoint(playerId, pos));
-        const last = token.queue[token.queue.length - 1];
-        if (last) [token.targetX, token.targetY] = last; // rest at the destination
-      }
-    };
+    // A dice roll reveals the number first (the dice ceremony), so the mover
+    // holds still for WALK_START_DELAY_MS and then steps out. That delay is
+    // counted down by the ticker rather than a setTimeout: this effect re-runs
+    // on every dispatch, and its cleanup used to CANCEL a still-pending walk —
+    // which is exactly how a roll could end up gliding straight to its tile
+    // instead of stepping.
+    const delay = events.some((e) => e.type === "DiceRolled") ? WALK_START_DELAY_MS : 0;
 
-    // A dice roll reveals the number first (the dice ceremony), so hold the
-    // mover(s) in place, then step out once the dice have settled — instead of
-    // gliding to the destination behind the overlay. Non-roll moves walk at once.
-    if (!events.some((e) => e.type === "DiceRolled")) {
-      startWalk();
-      return;
-    }
-    for (const playerId of paths.keys()) {
+    for (const [playerId, tilePositions] of paths) {
       const token = tokensRef.current.get(playerId);
       if (!token) continue;
-      token.queue = [];
+      token.queue = tilePositions.map((pos) => waypoint(playerId, pos));
       token.hop = null;
-      token.targetX = token.container.x; // freeze where it is during the reveal
-      token.targetY = token.container.y;
+      token.walkDelay = delay;
+      token.hopMs = hopDurationFor(tilePositions.length);
+      const last = token.queue[token.queue.length - 1];
+      if (last) [token.targetX, token.targetY] = last; // rest at the destination
     }
-    const timer = window.setTimeout(startWalk, WALK_START_DELAY_MS);
-    return () => window.clearTimeout(timer);
   }, [events, game, size, ready]);
 
   // Per-tile property-state overlays: price (unowned), owner marker, building

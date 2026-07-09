@@ -7,6 +7,9 @@ interface ActionDockProps {
   game: GameState;
   actingPlayerId: string;
   isActingPlayerLocal: boolean;
+  /** True while a pawn is still walking the board. Turn-advancing actions are
+   *  held until it lands, so a move can never be interrupted mid-animation. */
+  busy?: boolean;
   onOpenProperties: () => void;
   /** Opens the activity/history sheet (kept off-screen behind a button). */
   onOpenActivity: () => void;
@@ -34,6 +37,7 @@ export function ActionDock({
   game,
   actingPlayerId,
   isActingPlayerLocal,
+  busy = false,
   onOpenProperties,
   onOpenActivity,
   onOpenTrade,
@@ -129,6 +133,7 @@ export function ActionDock({
           </p>
           <Button
             variant="secondary"
+            disabled={busy}
             onClick={() => dispatch({ type: "PayBail", playerId: actingPlayerId })}
           >
             {t("hud.payBail", { amount: formatRupees(JAIL_BAIL_COST) })}
@@ -136,6 +141,7 @@ export function ActionDock({
           {player.jailFreeCards > 0 && (
             <Button
               variant="secondary"
+              disabled={busy}
               onClick={() => dispatch({ type: "UseJailFreeCard", playerId: actingPlayerId })}
             >
               {t("hud.useJailFreeCard")}
@@ -143,6 +149,7 @@ export function ActionDock({
           )}
           <Button
             variant="primary"
+            disabled={busy}
             onClick={() => dispatch({ type: "RollDice", playerId: actingPlayerId })}
           >
             {t("hud.tryDoubles")}
@@ -154,6 +161,7 @@ export function ActionDock({
         <Button
           variant="primary"
           className="px-10"
+          disabled={busy}
           onClick={() => dispatch({ type: "RollDice", playerId: actingPlayerId })}
         >
           🎲 {t("hud.roll")}
@@ -163,6 +171,7 @@ export function ActionDock({
       {game.turnPhase === "turn-idle" && (
         <Button
           variant="primary"
+          disabled={busy}
           onClick={() => dispatch({ type: "EndTurn", playerId: actingPlayerId })}
         >
           {t("hud.endTurn")}

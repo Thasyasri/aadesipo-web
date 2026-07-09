@@ -17,7 +17,13 @@ function thinkTime(): number {
   return MIN_THINK_MS + Math.random() * (MAX_THINK_MS - MIN_THINK_MS);
 }
 
-export function useAiTurnDriver(): void {
+/**
+ * @param blocked True while a pawn is still walking the board. The AI must not
+ *   think, decide, or dispatch until the current move has fully played out —
+ *   otherwise its actions (and its activity-log lines) appear while the
+ *   previous player's token is still mid-walk.
+ */
+export function useAiTurnDriver(blocked = false): void {
   const game = useGameView((s) => s.game);
   const players = useGameView((s) => s.players);
   const aiRng = useGameView((s) => s.aiRng);
@@ -33,6 +39,10 @@ export function useAiTurnDriver(): void {
 
   useEffect(() => {
     if (!game || game.turnPhase === "game-over") return;
+    // Strict sequencing: wait for the board to settle. When `blocked` flips this
+    // effect re-runs, so a timer scheduled a frame before the walk began gets
+    // cleared by the cleanup below, and re-scheduled once the walk finishes.
+    if (blocked) return;
 
     // An AI has an incoming trade to answer — respond after a brief pause,
     // regardless of whose turn it currently is (matching the pace of its
@@ -80,5 +90,5 @@ export function useAiTurnDriver(): void {
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [game]);
+  }, [game, blocked]);
 }

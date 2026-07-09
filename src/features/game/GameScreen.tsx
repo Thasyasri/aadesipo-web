@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import { getActingPlayerId } from "@aadesipo/engine";
 import { useGameView } from "@/state/gameStore";
 import { useAiTurnDriver } from "./useAiTurnDriver";
-import { Board, WALK_STEP_CAP, WALK_START_DELAY_MS, APPROX_MS_PER_TILE } from "./board/Board";
+import { Board } from "./board/Board";
 import { PlayerStrip } from "./hud/PlayerStrip";
 import { ActionDock } from "./hud/ActionDock";
 import { BuyPropertySheet } from "./sheets/BuyPropertySheet";
@@ -42,33 +42,14 @@ export function GameScreen() {
   const [inspectPosition, setInspectPosition] = useState<number | null>(null);
   const [eventTablesOpen, setEventTablesOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
-  // While the token is walking its tiles after a roll, hold back the landing
-  // (buy) sheet so it doesn't cover the board — the coin arrives first, then
-  // you decide.
-  const [walking, setWalking] = useState(false);
+  // The board reports exactly when a pawn is walking (previously this screen
+  // GUESSED the duration with a timer, which drifted out of step with the real
+  // animation). The whole turn now waits on it: the AI won't think, the player's
+  // controls are held, and the landing sheet stays back until the pawn arrives.
+  const [animating, setAnimating] = useState(false);
   const attemptedFor = useRef<string | null>(null);
 
-  useAiTurnDriver();
-
-  // Suppress the landing sheet for roughly as long as the token's walk takes.
-  useEffect(() => {
-    const hasRoll = recentEvents.some((e) => e.type === "DiceRolled");
-    const tiles = recentEvents.reduce((sum, e) => {
-      if (e.type === "PlayerMoved") {
-        const n = Math.abs(e.steps);
-        return sum + (n > WALK_STEP_CAP ? 1 : n); // long jumps glide (1 hop)
-      }
-      if (e.type === "SentToJail") return sum + 1;
-      return sum;
-    }, 0);
-    if (!hasRoll || tiles === 0) return;
-    setWalking(true);
-    const timer = window.setTimeout(
-      () => setWalking(false),
-      WALK_START_DELAY_MS + tiles * APPROX_MS_PER_TILE + 200,
-    );
-    return () => window.clearTimeout(timer);
-  }, [recentEvents]);
+  useAiTurnDriver(animating);
 
   useEffect(() => {
     if (!routeGameId || routeGameId === gameId) return;
@@ -175,6 +156,7 @@ export function GameScreen() {
             events={recentEvents}
             onSelectTile={setInspectPosition}
             onSelectEmblem={() => setEventTablesOpen(true)}
+            onAnimatingChange={setAnimating}
           />
         </div>
 
@@ -199,6 +181,7 @@ export function GameScreen() {
             game={game}
             actingPlayerId={actingPlayerId}
             isActingPlayerLocal={isActingPlayerLocal}
+            busy={animating}
             onOpenProperties={() => setPropertiesOpen(true)}
             onOpenActivity={() => setActivityOpen(true)}
             onOpenTrade={() => setTradeOpen(true)}
@@ -221,7 +204,7 @@ export function GameScreen() {
       />
 
       <DiceCeremony events={recentEvents} />
-      {!walking && (
+      {!animating && (
         <BuyPropertySheet
           game={game}
           actingPlayerId={actingPlayerId}
@@ -239,7 +222,16 @@ export function GameScreen() {
       />
       <PropertiesSheet
         game={game}
-        actingPlayerId={actingPlayerId}
+        // The seat this device owns: the acting seat in Pass & Play, the single
+        // human in Vs. AI. Passing the ACTING player here used to hand you the
+        // AI's portfolio (and its buildings) whenever it was the AI's turn.
+        playerId={localHumanId ?? actingPlayerId}
+        canAct={
+          localHumanId === actingPlayerId &&
+          isActingPlayerLocal &&
+          !animating &&
+          game.turnPhase !== "game-over"
+        }
         open={propertiesOpen}
         onClose={() => setPropertiesOpen(false)}
         dispatch={dispatch}

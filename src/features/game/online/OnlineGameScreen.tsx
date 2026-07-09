@@ -4,7 +4,7 @@ import { getActingPlayerId, type Action } from "@aadesipo/engine";
 import { useSession } from "@/state/session";
 import { useOnlineGameView } from "@/multiplayer/onlineGameStore";
 import { fetchActiveGameForRoom, fetchRoomSeats, fetchRoomInfo } from "@/multiplayer/onlineClient";
-import { Board, WALK_STEP_CAP, WALK_START_DELAY_MS, APPROX_MS_PER_TILE } from "../board/Board";
+import { Board } from "../board/Board";
 import { PlayerStrip } from "../hud/PlayerStrip";
 import { ActionDock } from "../hud/ActionDock";
 import { BuyPropertySheet } from "../sheets/BuyPropertySheet";
@@ -46,30 +46,11 @@ export function OnlineGameScreen() {
   const [inspectPosition, setInspectPosition] = useState<number | null>(null);
   const [eventTablesOpen, setEventTablesOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
-  // While the token walks its tiles after a roll, hold back the landing (buy)
-  // sheet so it doesn't cover the board — the coin arrives first, then decide.
-  const [walking, setWalking] = useState(false);
+  // The board reports exactly when a pawn is walking; the turn waits on it (see
+  // GameScreen for the same treatment). Replaces a timer that only *guessed*
+  // the walk duration and drifted out of step with the real animation.
+  const [animating, setAnimating] = useState(false);
   const attempted = useRef<string | null>(null);
-
-  // Suppress the landing sheet for roughly as long as the token's walk takes.
-  useEffect(() => {
-    const hasRoll = recentEvents.some((e) => e.type === "DiceRolled");
-    const tiles = recentEvents.reduce((sum, e) => {
-      if (e.type === "PlayerMoved") {
-        const n = Math.abs(e.steps);
-        return sum + (n > WALK_STEP_CAP ? 1 : n);
-      }
-      if (e.type === "SentToJail") return sum + 1;
-      return sum;
-    }, 0);
-    if (!hasRoll || tiles === 0) return;
-    setWalking(true);
-    const timer = window.setTimeout(
-      () => setWalking(false),
-      WALK_START_DELAY_MS + tiles * APPROX_MS_PER_TILE + 200,
-    );
-    return () => window.clearTimeout(timer);
-  }, [recentEvents]);
 
   useEffect(() => {
     if (!roomId || !user || storeRoomId === roomId) return;
@@ -167,6 +148,7 @@ export function OnlineGameScreen() {
             events={recentEvents}
             onSelectTile={setInspectPosition}
             onSelectEmblem={() => setEventTablesOpen(true)}
+            onAnimatingChange={setAnimating}
           />
         </div>
 
@@ -189,6 +171,7 @@ export function OnlineGameScreen() {
             game={game}
             actingPlayerId={actingPlayerId}
             isActingPlayerLocal={isActingPlayerLocal}
+            busy={animating}
             onOpenProperties={() => setPropertiesOpen(true)}
             onOpenActivity={() => setActivityOpen(true)}
             onOpenTrade={() => setTradeOpen(true)}
@@ -208,7 +191,7 @@ export function OnlineGameScreen() {
       />
 
       <DiceCeremony events={recentEvents} />
-      {!walking && (
+      {!animating && (
         <BuyPropertySheet
           game={game}
           actingPlayerId={actingPlayerId}
@@ -226,7 +209,10 @@ export function OnlineGameScreen() {
       />
       <PropertiesSheet
         game={game}
-        actingPlayerId={actingPlayerId}
+        // This device owns exactly the signed-in user's seat — never the acting
+        // player's, or every rival would see (and try to sell) their buildings.
+        playerId={user.id}
+        canAct={isActingPlayerLocal && !animating && game.turnPhase !== "game-over"}
         open={propertiesOpen}
         onClose={() => setPropertiesOpen(false)}
         dispatch={dispatch}
