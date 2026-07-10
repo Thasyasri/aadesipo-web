@@ -91,13 +91,18 @@ existing functions already do.
       unauthenticated call. 0006/0007 had been applied via the SQL Editor and
       were never recorded, so they were `migration repair`ed first — a plain
       `db push` would have re-run 0006 and died on its `create policy`.
-      **Still to do:** the pre-verification rows, `delete from game_results
-      where source = 'online'` (see the end of 0009). They are self-reported.
-- [ ] One real two-player online game played end to end. The store logic is
-      unit-tested, but no automated test can drive two authenticated clients
-      in a room — reconnect, the turn-takeover banner, and result sync have
-      never run against the live project. **This is the only thing standing
-      between the current build and a beta.**
+      **Still to do:** clear the pre-verification rows with
+      `delete from game_results where source = 'online'` (see the end of 0009).
+      They are self-reported.
+- [x] Two real clients, two sessions, one room, driven against the live project.
+      Room create → join by code → start → 21 turns, no exceptions and no seat
+      divergence. Reconnect verified the hard way: the offline client was shown
+      to fall behind, then to match the host exactly once its socket returned.
+      This found the double-`init()` bug (two anonymous users per visitor) that
+      made online unusable, and the `Player 2` naming gap for guests.
+- [ ] A two-player game between two SIGNED-IN accounts. Guests can't exercise
+      result sync — `record-result` rejects anonymous users — so `game_results`
+      and the leaderboard are still unproven end to end.
 - [ ] Real Sentry DSN + PostHog key set (M9/M11)
 - [ ] `docs/LEGAL_AND_CONTENT_REVIEW.md` — trademark review with an
       actual lawyer done, at minimum

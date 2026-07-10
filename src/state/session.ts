@@ -80,6 +80,22 @@ async function ensureProfile(user: User): Promise<Profile> {
   };
 }
 
+/**
+ * `init()` must run exactly once per page load, however many times it is called.
+ *
+ * It wasn't guarded, and StrictMode invokes mount effects twice — so a first-time
+ * visitor got TWO `signInAnonymously()` calls and therefore two different
+ * anonymous users. Whichever won the race owned the session; the other had
+ * already claimed the room seat. `room_players.user_id` then named a user the
+ * client was no longer signed in as, and RLS (correctly) refused to show them
+ * their own game: "This room doesn't have an active game." The host hit the
+ * mirror image of it — `isHost` compared the surviving user against a
+ * `rooms.host_id` recorded for the discarded one, so the host could never start.
+ *
+ * It also subscribed to onAuthStateChange twice, leaking a listener.
+ */
+let initOnce: Promise<void> | null = null;
+
 export const useSession = create<SessionState>((set, get) => ({
   status: isSupabaseConfigured ? "loading" : "unconfigured",
   user: null,
@@ -89,35 +105,56 @@ export const useSession = create<SessionState>((set, get) => ({
 
   init: async () => {
     if (!supabase) return; // status is already "unconfigured"
+    // Assigned before the first await, so two synchronous callers (StrictMode's
+    // double-invoked mount effect) share one run rather than racing two
+    // anonymous sign-ins. See the note on initOnce above.
+    initOnce ??= (async () => {
+      if (!supabase) return;
 
-    supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "PASSWORD_RECOVERY") set({ recoveryMode: true });
+      supabase.auth.onAuthStateChange((event, session) => {
+        if (event === "PASSWORD_RECOVERY") set({ recoveryMode: true });
+        if (session?.user) {
+          const nextStatus: SessionStatus = session.user.is_anonymous ? "guest" : "authenticated";
+
+          // Publish the identity the instant the session exists. It used to wait
+          // on ensureProfile's round-trip, which left a window — and, if that
+          // call ever rejected, a permanent state — where the Supabase client
+          // held a valid session (so every RLS query and Edge Function worked)
+          // while `user` was still null. LobbyScreen's
+          // `isHost = user?.id === room.hostId` was therefore false for the
+          // actual host, who then sat looking at "Waiting for the host to start
+          // the game…" on their own room. Seat ownership online keys on user.id.
+          set({ user: session.user, status: nextStatus });
+
+          // The profile is display-name and leaderboard-opt-in: cosmetic, and
+          // every reader already tolerates it being null. Let it arrive when it
+          // arrives, and never let its failure take the identity down with it.
+          ensureProfile(session.user)
+            .then((profile) => set({ profile }))
+            .catch((err: Error) => set({ error: err.message }));
+
+          // Newly signed in? Flush any results captured while a guest.
+          if (nextStatus === "authenticated") void syncUnsyncedResults();
+        } else {
+          set({ user: null, profile: null, status: "loading" });
+        }
+      });
+
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
       if (session?.user) {
-        const nextStatus: SessionStatus = session.user.is_anonymous ? "guest" : "authenticated";
-        ensureProfile(session.user)
-          .then((profile) => {
-            set({ user: session.user, profile, status: nextStatus });
-            // Newly signed in? Flush any results captured while a guest.
-            if (nextStatus === "authenticated") void syncUnsyncedResults();
-          })
-          .catch((err: Error) => set({ error: err.message, status: "error" }));
-      } else {
-        set({ user: null, profile: null, status: "loading" });
+        // onAuthStateChange above already fires for this, nothing more to do.
+        return;
       }
-    });
 
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+      // No session at all yet — guest-first onboarding means we don't make
+      // the player choose anything before they can play.
+      await get().continueAsGuest();
+    })();
 
-    if (session?.user) {
-      // onAuthStateChange above already fires for this, nothing more to do.
-      return;
-    }
-
-    // No session at all yet — guest-first onboarding means we don't make
-    // the player choose anything before they can play.
-    await get().continueAsGuest();
+    return initOnce;
   },
 
   continueAsGuest: async () => {

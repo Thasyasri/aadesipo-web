@@ -28,6 +28,16 @@ import { Button } from "@/components/Button";
 import { Card } from "@/components/Card";
 import type { PlayerSetup } from "@/state/gameStore";
 
+/**
+ * A stable handle for a player who never set a name. Derived from their user id,
+ * so every client in the room renders the same person the same way — a seat-index
+ * fallback would too, but it says nothing about who they are, and it shifts if
+ * the roster ever does.
+ */
+function guestName(userId: string): string {
+  return `Guest ${userId.replace(/-/g, "").slice(0, 4).toUpperCase()}`;
+}
+
 export function OnlineGameScreen() {
   const { roomId } = useParams<{ roomId: string }>();
   const { user } = useSession();
@@ -165,9 +175,13 @@ export function OnlineGameScreen() {
   const actingPlayerId = actingId;
   const isActingPlayerLocal = actingPlayerId === user.id;
 
-  const displaySetups: PlayerSetup[] = playerIds.map((id, i) => ({
+  const displaySetups: PlayerSetup[] = playerIds.map((id) => ({
     id,
-    displayName: id === user.id ? "You" : (names[id] ?? `Player ${i + 1}`),
+    // Guests never set a display name, and a guest is the default online player,
+    // so the fallback has to say who someone IS rather than where they sit. The
+    // old `Player ${i + 1}` made every guest-vs-guest game read
+    // "Player 2 rolled 3 + 4" — the very thing fetchProfiles was wired in to fix.
+    displayName: id === user.id ? "You" : (names[id] ?? guestName(id)),
   }));
 
   // Online: this device controls exactly the signed-in user's seat.

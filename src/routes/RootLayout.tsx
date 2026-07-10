@@ -17,7 +17,9 @@ export function RootLayout() {
     // Sweep away the replay data of long-finished games. Best-effort and
     // off the critical path: a failure here costs some disk, nothing else.
     void purgeFinishedGames().catch(() => {});
-    // Runs once — init() itself guards against re-subscribing.
+    // StrictMode invokes this twice in development. init() is idempotent (it
+    // memoises its own run), which it genuinely was NOT when this comment first
+    // claimed it: two calls meant two anonymous sign-ins and two user ids.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
