@@ -85,13 +85,19 @@ existing functions already do.
 - [x] Real Supabase project deployed and smoke-tested (M8 README) —
       migrations 0001-0007 applied; sign-in, `profiles` update and the
       `game_results` RLS insert all verified against the live project.
-- [ ] Migrations 0008-0010 applied and `record-result` + `advance-turn`
-      deployed (see above). Until then the public leaderboard accepts
-      client-reported wins.
+- [x] Migrations 0008-0010 applied and `record-result` + `advance-turn`
+      deployed. Verified against the live project: the ledger reads 0001-0010
+      applied, `room_presence` answers, and both new functions 401 an
+      unauthenticated call. 0006/0007 had been applied via the SQL Editor and
+      were never recorded, so they were `migration repair`ed first — a plain
+      `db push` would have re-run 0006 and died on its `create policy`.
+      **Still to do:** the pre-verification rows, `delete from game_results
+      where source = 'online'` (see the end of 0009). They are self-reported.
 - [ ] One real two-player online game played end to end. The store logic is
       unit-tested, but no automated test can drive two authenticated clients
       in a room — reconnect, the turn-takeover banner, and result sync have
-      never run against the live project.
+      never run against the live project. **This is the only thing standing
+      between the current build and a beta.**
 - [ ] Real Sentry DSN + PostHog key set (M9/M11)
 - [ ] `docs/LEGAL_AND_CONTENT_REVIEW.md` — trademark review with an
       actual lawyer done, at minimum
