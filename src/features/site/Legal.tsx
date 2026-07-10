@@ -7,7 +7,7 @@ import { useDocumentMeta } from "./useDocumentMeta";
  * site is promoted publicly. A privacy policy without a working contact route
  * isn't much of a policy.
  */
-const CONTACT_EMAIL = "your-contact@example.com";
+const CONTACT_EMAIL = "krithimyths@gmail.com";
 
 const LAST_UPDATED = "9 July 2026";
 
