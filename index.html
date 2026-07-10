@@ -42,10 +42,30 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!--
+      Loaded without blocking the first paint: `media="print"` means the browser
+      fetches it at low priority and doesn't wait for it, and onload promotes it
+      to `all`. Measured at ~900ms of render-blocking on a throttled mobile run.
+
+      This costs no extra flash of unstyled text. `display=swap` already paints
+      in the fallback face until Fraunces/Manrope arrive, so the swap happened
+      either way — blocking render only delayed the moment it could start.
+    -->
     <link
       href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
+      media="print"
+      onload="
+        this.media = 'all';
+        this.onload = null;
+      "
     />
+    <noscript>
+      <link
+        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
     <script>
       (function () {
         try {
