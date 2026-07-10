@@ -1,0 +1,24 @@
+# Check every text file out with LF, on every platform.
+#
+# Without this, a Windows working tree gets CRLF while the repository (and CI)
+# hold LF. `prettier --check .` then fails locally on files that are perfectly
+# clean in git — so its output becomes noise you learn to ignore, and a genuine
+# violation hides in the middle of it. That is exactly how a stray blank line in
+# JoinRoomScreen.tsx reached main and broke CI four commits running.
+#
+# The repository content does not change: it was already LF. Only the checkout does.
+* text=auto eol=lf
+
+# Binary assets must never be touched.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.otf binary
+*.mp3 binary
+*.wav binary
