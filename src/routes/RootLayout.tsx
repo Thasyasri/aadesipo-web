@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { Outlet } from "react-router";
 import { useSession } from "@/state/session";
+import { purgeFinishedGames } from "@/services/db";
 
 /**
  * Top-level wrapper: boots the session once, then renders whichever layout the
@@ -13,6 +14,9 @@ export function RootLayout() {
 
   useEffect(() => {
     void init();
+    // Sweep away the replay data of long-finished games. Best-effort and
+    // off the critical path: a failure here costs some disk, nothing else.
+    void purgeFinishedGames().catch(() => {});
     // Runs once — init() itself guards against re-subscribing.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

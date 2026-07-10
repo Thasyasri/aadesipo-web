@@ -1,6 +1,16 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import { applyAction, createInitialState, CLASSIC_MODE, type GameState } from "@aadesipo/engine";
-import { db, persistNewGame, persistAction, loadGame, listResumableGames, deleteGame } from "./db";
+import {
+  db,
+  persistNewGame,
+  persistAction,
+  loadGame,
+  listGameResults,
+  listResumableGames,
+  purgeFinishedGames,
+  saveGameResultLocal,
+  deleteGame,
+} from "./db";
 import type { PlayerSetup } from "@/state/gameStore";
 
 const PLAYERS: PlayerSetup[] = [
@@ -12,6 +22,7 @@ beforeEach(async () => {
   await db.gameMeta.clear();
   await db.gameActions.clear();
   await db.gameSnapshots.clear();
+  await db.gameResults.clear();
 });
 
 describe("persistence: save, append, resume", () => {
@@ -141,5 +152,70 @@ describe("listResumableGames / deleteGame", () => {
 
     const remainingActions = await db.gameActions.where("gameId").equals("unfinished").toArray();
     expect(remainingActions).toHaveLength(0);
+  });
+});
+
+describe("purgeFinishedGames", () => {
+  /** A finished game with one action and one snapshot behind it. */
+  async function finishedGame(gameId: string, updatedAt: number) {
+    await persistNewGame(gameId, `seed-${gameId}`, PLAYERS, false);
+    const state = createInitialState(`seed-${gameId}`, CLASSIC_MODE, ["p1", "p2"]);
+    const rolled = applyAction(state, { type: "RollDice", playerId: "p1" });
+    if (!rolled.ok) throw new Error("setup roll rejected");
+    await persistAction(gameId, 1, { type: "RollDice", playerId: "p1" }, rolled.state);
+    await db.gameMeta.update(gameId, { isFinished: true, updatedAt });
+  }
+
+  it("drops the replay data of finished games beyond the retention window", async () => {
+    await finishedGame("old", 1_000);
+    await finishedGame("new", 2_000);
+
+    const purged = await purgeFinishedGames(1); // keep only the newest finished game
+
+    expect(purged).toBe(1);
+    expect(await loadGame("old")).toBeNull();
+    expect(await db.gameActions.where("gameId").equals("old").count()).toBe(0);
+    expect(await db.gameSnapshots.where("gameId").equals("old").count()).toBe(0);
+    // The newest finished game is still whole.
+    expect(await loadGame("new")).not.toBeNull();
+  });
+
+  it("never touches an unfinished game, however old", async () => {
+    await persistNewGame("in-progress", "seed-x", PLAYERS, false);
+    await db.gameMeta.update("in-progress", { updatedAt: 1 }); // ancient, but live
+    await finishedGame("done", 9_999);
+
+    expect(await purgeFinishedGames(0)).toBe(1); // only "done" qualifies
+
+    expect(await loadGame("in-progress")).not.toBeNull();
+    expect(await listResumableGames()).toHaveLength(1);
+  });
+
+  it("leaves recorded results alone — stats must survive the purge", async () => {
+    await finishedGame("done", 1);
+    await saveGameResultLocal({
+      id: "done",
+      finishedAt: 1,
+      mode: "classic",
+      source: "vs-ai",
+      playerCount: 2,
+      won: true,
+      reason: "last-player-standing",
+      netWorth: 1234,
+      rank: 1,
+      rounds: 7,
+      cities: ["Charminar"],
+      synced: false,
+    });
+
+    await purgeFinishedGames(0);
+
+    expect(await loadGame("done")).toBeNull(); // replay data gone
+    expect(await listGameResults()).toHaveLength(1); // the result remains
+  });
+
+  it("is a no-op when nothing has finished", async () => {
+    await persistNewGame("live", "seed-y", PLAYERS, false);
+    expect(await purgeFinishedGames(0)).toBe(0);
   });
 });

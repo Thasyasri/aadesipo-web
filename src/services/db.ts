@@ -258,6 +258,37 @@ export async function deleteGame(gameId: string): Promise<void> {
   });
 }
 
+/** How many finished games keep their full replay data. A safety net, not a
+ *  feature: nothing in the app reads them, but a bug that wrongly marks a game
+ *  finished shouldn't destroy it beyond recovery on the next launch. */
+const FINISHED_GAMES_RETAINED = 10;
+
+/**
+ * Drop the action log and snapshots of long-finished games.
+ *
+ * A finished game can't be resumed (`resumeGame` refuses it) and its outcome
+ * lives in the separate `gameResults` table, so its actions and snapshots are
+ * dead weight that only ever grew — a marathon game is hundreds of rows, and
+ * nothing has ever deleted them. The result row is untouched, so stats,
+ * streaks and the leaderboard are unaffected.
+ *
+ * @returns how many games were purged.
+ */
+export async function purgeFinishedGames(keep = FINISHED_GAMES_RETAINED): Promise<number> {
+  const stale = (await db.gameMeta.orderBy("updatedAt").reverse().toArray())
+    .filter((game) => game.isFinished)
+    .slice(keep)
+    .map((game) => game.gameId);
+  if (stale.length === 0) return 0;
+
+  await db.transaction("rw", db.gameMeta, db.gameActions, db.gameSnapshots, async () => {
+    await db.gameMeta.bulkDelete(stale);
+    await db.gameActions.where("gameId").anyOf(stale).delete();
+    await db.gameSnapshots.where("gameId").anyOf(stale).delete();
+  });
+  return stale.length;
+}
+
 /**
  * Drops every stored action and snapshot from `fromSeq` onward — the on-disk
  * side of an undo. Marks the game unfinished again (undoing a game-ending move
